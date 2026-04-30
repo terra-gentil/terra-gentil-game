@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS } from '../config/GameConfig';
 import { TILE, type AllLevelsJson, type LevelJson } from '../types/Level';
+import { getSettings, type Settings } from '../config/Settings';
 
 type Dir = 'NONE' | 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 
@@ -39,6 +40,53 @@ interface FuelBarrel {
   tween: Phaser.Tweens.Tween;
 }
 
+// Visual scaling derivado das settings. Usado pra ajustar tamanho de fonte,
+// player, D-pad etc. quando "modo olhos cansados" estiver ligado.
+interface VisualScale {
+  hudFont: string;
+  hudStroke: number;
+  fuelLabelFont: string;
+  playerScale: number;
+  playerStroke: number;
+  centerFont: string;
+  dpadButtonSize: number;
+  dpadArm: number;
+  dpadArrowFont: string;
+  dpadStroke: number;
+  bgColor: string;
+}
+
+function visualScaleFor(settings: Settings): VisualScale {
+  if (settings.eyeStrainMode) {
+    return {
+      hudFont: '44px',
+      hudStroke: 5,
+      fuelLabelFont: '24px',
+      playerScale: 0.85,
+      playerStroke: 7,
+      centerFont: '56px',
+      dpadButtonSize: 140,
+      dpadArm: 105,
+      dpadArrowFont: '84px',
+      dpadStroke: 5,
+      bgColor: '#062007',
+    };
+  }
+  return {
+    hudFont: '32px',
+    hudStroke: 4,
+    fuelLabelFont: '20px',
+    playerScale: 0.7,
+    playerStroke: 4,
+    centerFont: '48px',
+    dpadButtonSize: 120,
+    dpadArm: 90,
+    dpadArrowFont: '64px',
+    dpadStroke: 3,
+    bgColor: '#0E3211',
+  };
+}
+
 export class GameScene extends Phaser.Scene {
   private allLevels!: AllLevelsJson;
   private level!: LevelJson;
@@ -72,6 +120,8 @@ export class GameScene extends Phaser.Scene {
   private gameOver = false;
   private advancing = false;
 
+  private vs!: VisualScale;
+
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -90,6 +140,7 @@ export class GameScene extends Phaser.Scene {
     this.fuelSpawnTimer = undefined;
     this.gameOver = false;
     this.advancing = false;
+    this.vs = visualScaleFor(getSettings());
   }
 
   create(): void {
@@ -100,10 +151,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Clone profundo pra nao mutar o JSON cacheado entre runs
     this.level = JSON.parse(JSON.stringify(this.allLevels[this.levelIndex])) as LevelJson;
 
-    this.cameras.main.setBackgroundColor('#0E3211');
+    this.cameras.main.setBackgroundColor(this.vs.bgColor);
 
     const W = this.level.largura_efetiva_tiles;
     const H = this.level.altura_tiles;
@@ -147,20 +197,26 @@ export class GameScene extends Phaser.Scene {
     this.player = this.add.rectangle(
       this.tileToPx(this.playerTileX),
       this.tileToPy(this.playerTileY),
-      TILE_SIZE * 0.7,
-      TILE_SIZE * 0.7,
+      TILE_SIZE * this.vs.playerScale,
+      TILE_SIZE * this.vs.playerScale,
       COLORS.GENTILEZA_YELLOW
     );
-    this.player.setStrokeStyle(4, COLORS.MOWER_ORANGE);
+    this.player.setStrokeStyle(this.vs.playerStroke, COLORS.MOWER_ORANGE);
     this.player.setDepth(10);
 
-    // Sem offsetX: camera centra no player; bounds clampam quando level e menor que viewport
     this.cameras.main.startFollow(this.player, false, 0.1, 0);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
 
-    const onPointerDown = (pointer: Phaser.Input.Pointer) => {
+    // Global pointer pra tap-to-move (fora do D-pad). currentlyOver tem
+    // os GameObjects interativos sob o ponteiro — se houver, e clique no
+    // D-pad e o handler do botao trata.
+    const onPointerDown = (
+      pointer: Phaser.Input.Pointer,
+      currentlyOver: Phaser.GameObjects.GameObject[]
+    ) => {
       if (this.advancing) return;
+      if (currentlyOver.length > 0) return;
       if (this.levelCleared) {
         this.advanceLevel();
         return;
@@ -194,8 +250,6 @@ export class GameScene extends Phaser.Scene {
     kb.on('keydown-ENTER', onConfirm);
     kb.on('keydown-ESC', onEscape);
 
-    // Cleanup explicito ao trocar de cena (Phaser limpa input plugin, mas
-    // garantimos que nao acumule listeners caso o ciclo de vida da scene mude).
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off('pointerdown', onPointerDown);
       kb.off('keydown-SPACE', onConfirm);
@@ -207,6 +261,7 @@ export class GameScene extends Phaser.Scene {
     this.buildHud();
     this.updateHud();
     this.updateFuelBar();
+    this.buildDPad();
 
     if (this.level.tiles[this.playerTileY][this.playerTileX] === TILE.TALL) {
       this.cutTileAt(this.playerTileX, this.playerTileY);
@@ -222,10 +277,10 @@ export class GameScene extends Phaser.Scene {
 
     this.hudText = this.add.text(40, HUD_HEIGHT / 2, '', {
       fontFamily: 'Arial Black',
-      fontSize: '32px',
+      fontSize: this.vs.hudFont,
       color: '#FFFFFF',
       stroke: '#000000',
-      strokeThickness: 4,
+      strokeThickness: this.vs.hudStroke,
     });
     this.hudText.setOrigin(0, 0.5);
     this.hudText.setScrollFactor(0);
@@ -259,13 +314,60 @@ export class GameScene extends Phaser.Scene {
 
     this.fuelLabel = this.add.text(fuelBarX + fuelBarW / 2, fuelBarY, '', {
       fontFamily: 'Arial Black',
-      fontSize: '20px',
+      fontSize: this.vs.fuelLabelFont,
       color: '#FFFFFF',
       stroke: '#000000',
       strokeThickness: 3,
     });
     this.fuelLabel.setOrigin(0.5);
     this.fuelLabel.setScrollFactor(0).setDepth(1002);
+  }
+
+  private buildDPad(): void {
+    const cx = 180;
+    const cy = GAME_HEIGHT - 180;
+    const arm = this.vs.dpadArm;
+    const size = this.vs.dpadButtonSize;
+    const buttons: Array<{ dir: Dir; offsetX: number; offsetY: number; arrow: string }> = [
+      { dir: 'UP', offsetX: 0, offsetY: -arm, arrow: '▲' },
+      { dir: 'DOWN', offsetX: 0, offsetY: arm, arrow: '▼' },
+      { dir: 'LEFT', offsetX: -arm, offsetY: 0, arrow: '◀' },
+      { dir: 'RIGHT', offsetX: arm, offsetY: 0, arrow: '▶' },
+    ];
+
+    for (const btn of buttons) {
+      const bx = cx + btn.offsetX;
+      const by = cy + btn.offsetY;
+
+      const rect = this.add.rectangle(bx, by, size, size, 0x000000, 0.55);
+      rect.setStrokeStyle(this.vs.dpadStroke, 0xFFFFFF);
+      rect.setScrollFactor(0).setDepth(2000);
+      rect.setInteractive({ useHandCursor: true });
+
+      const arrow = this.add.text(bx, by, btn.arrow, {
+        fontFamily: 'Arial Black',
+        fontSize: this.vs.dpadArrowFont,
+        color: '#FFFFFF',
+        stroke: '#000000',
+        strokeThickness: 4,
+      });
+      arrow.setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+
+      rect.on('pointerdown', () => {
+        if (this.advancing) return;
+        if (this.levelCleared) {
+          this.advanceLevel();
+          return;
+        }
+        if (this.gameOver) {
+          this.restartLevel();
+          return;
+        }
+        this.requestDir(btn.dir);
+      });
+      rect.on('pointerover', () => rect.setFillStyle(0x000000, 0.75));
+      rect.on('pointerout', () => rect.setFillStyle(0x000000, 0.55));
+    }
   }
 
   private worldOffsetX(): number {
@@ -291,13 +393,10 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.levelCleared || this.gameOver) return;
-    // Cap dt em 50ms pra proteger snap-to-grid de lag spikes
-    // (delta > tile cruzaria 2 tiles num frame e bagunçaria a deteccao)
     const cappedDelta = Math.min(delta, 50);
     const dt = cappedDelta / 1000;
     this.readInput();
 
-    // Decremento de combustivel: so quando se movendo (mesmo modelo do original)
     if (this.dir !== 'NONE') {
       this.fuelDecAccumMs += cappedDelta;
       while (this.fuelDecAccumMs >= FUEL_DECAY_INTERVAL_MS) {
@@ -374,7 +473,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onEnterTile(tx: number, ty: number): void {
-    // Pickup de galao tem prioridade
     if (this.fuelBarrel && this.fuelBarrel.tileX === tx && this.fuelBarrel.tileY === ty) {
       this.onPickupFuel();
       return;
@@ -452,7 +550,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (candidates.length === 0) {
-      // Sem grama alta sobrando — reagenda pra mais tarde
       this.scheduleFuelSpawn();
       return;
     }
@@ -508,7 +605,7 @@ export class GameScene extends Phaser.Scene {
       : `FASE ${this.level.id} COMPLETA!\n\nToque ou aperte ESPACO pra fase ${this.level.id + 1}`;
     this.centerMessage = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, msg, {
       fontFamily: 'Arial Black',
-      fontSize: '48px',
+      fontSize: this.vs.centerFont,
       color: '#FFFFFF',
       stroke: '#000000',
       strokeThickness: 6,
@@ -535,7 +632,7 @@ export class GameScene extends Phaser.Scene {
       `SEM COMBUSTIVEL!\n\nFASE ${this.level.id}\n\nToque ou aperte ESPACO pra tentar de novo\n(ESC volta ao titulo)`,
       {
         fontFamily: 'Arial Black',
-        fontSize: '44px',
+        fontSize: this.vs.centerFont,
         color: '#FF7043',
         stroke: '#000000',
         strokeThickness: 6,

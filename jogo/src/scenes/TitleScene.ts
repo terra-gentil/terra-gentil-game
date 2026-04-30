@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
+import { getSettings, toggleEyeStrainMode } from '../config/Settings';
 
 export class TitleScene extends Phaser.Scene {
+  private eyeStrainButton!: Phaser.GameObjects.Text;
+
   constructor() {
     super({ key: 'TitleScene' });
   }
@@ -9,7 +12,7 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor('#1B5E20');
 
-    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 4, 'GENTILEZA', {
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 5, 'GENTILEZA', {
       fontFamily: 'Arial Black',
       fontSize: '96px',
       color: '#F5C97E',
@@ -18,7 +21,7 @@ export class TitleScene extends Phaser.Scene {
     });
     title.setOrigin(0.5);
 
-    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 4 + 100, 'Resgate dos Jardins', {
+    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 5 + 100, 'Resgate dos Jardins', {
       fontFamily: 'Arial',
       fontSize: '48px',
       color: '#FFFFFF',
@@ -27,7 +30,7 @@ export class TitleScene extends Phaser.Scene {
     });
     subtitle.setOrigin(0.5);
 
-    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 80, 'JOGAR DESDE A FASE 1', {
+    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'JOGAR DESDE A FASE 1', {
       fontFamily: 'Arial',
       fontSize: '40px',
       color: '#FFFFFF',
@@ -48,6 +51,22 @@ export class TitleScene extends Phaser.Scene {
     startButton.on('pointerdown', () => {
       this.scene.start('GameScene', { levelIndex: 0 });
     });
+
+    // Toggle de modo olhos cansados (acessibilidade pro publico 40-70)
+    this.eyeStrainButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, '', {
+      fontFamily: 'Arial Black',
+      fontSize: '28px',
+      color: '#FFFFFF',
+      backgroundColor: '#2E7D32',
+      padding: { x: 24, y: 14 },
+    });
+    this.eyeStrainButton.setOrigin(0.5);
+    this.eyeStrainButton.setInteractive({ useHandCursor: true });
+    this.eyeStrainButton.on('pointerdown', () => {
+      const updated = toggleEyeStrainMode();
+      this.refreshEyeStrainLabel(updated.eyeStrainMode);
+    });
+    this.refreshEyeStrainLabel(getSettings().eyeStrainMode);
 
     // Selector de fase pra teste rapido (1-10)
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 200, 'OU PULE PRA UMA FASE:', {
@@ -81,5 +100,10 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(0.6);
 
     console.log('TitleScene: inicializada');
+  }
+
+  private refreshEyeStrainLabel(active: boolean): void {
+    this.eyeStrainButton.setText(`MODO OLHOS CANSADOS: ${active ? 'LIGADO' : 'DESLIGADO'}`);
+    this.eyeStrainButton.setBackgroundColor(active ? '#558B2F' : '#37474F');
   }
 }

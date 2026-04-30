@@ -1,131 +1,237 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS } from '../config/GameConfig';
+import { TILE, type LevelJson } from '../types/Level';
+
+type Dir = 'NONE' | 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
+
+const DIR_VEC: Record<Dir, { x: number; y: number }> = {
+  NONE: { x: 0, y: 0 },
+  LEFT: { x: -1, y: 0 },
+  RIGHT: { x: 1, y: 0 },
+  UP: { x: 0, y: -1 },
+  DOWN: { x: 0, y: 1 },
+};
+
+const TILE_COLOR: Record<number, number> = {
+  [TILE.CUT]: COLORS.GRASS_CUT,
+  [TILE.TALL]: COLORS.GRASS_TALL,
+  [TILE.FLOWERS]: 0xE91E63,
+  [TILE.STONE]: 0x8E8E8E,
+};
 
 export class GameScene extends Phaser.Scene {
+  private level!: LevelJson;
+  private tileGrid: Phaser.GameObjects.Rectangle[][] = [];
+  private originX = 0;
+  private originY = 0;
+
   private player!: Phaser.GameObjects.Rectangle;
+  private playerTileX = 0;
+  private playerTileY = 0;
+  private dir: Dir = 'NONE';
+  private pendingDir: Dir = 'NONE';
+  private speed = 240;
+
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private speed = 200;
-  private cutTiles: Set<string> = new Set();
   private hudText!: Phaser.GameObjects.Text;
+  private cutCount = 0;
 
   constructor() {
     super({ key: 'GameScene' });
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#1B5E20');
+    this.level = this.cache.json.get('fase_01') as LevelJson;
+    if (!this.level) {
+      console.error('fase_01 nao carregou');
+      return;
+    }
 
-    // Renderiza grid de gramado alto (placeholder)
-    const gridCols = Math.floor(GAME_WIDTH / TILE_SIZE);
-    const gridRows = Math.floor(GAME_HEIGHT / TILE_SIZE);
+    this.cameras.main.setBackgroundColor('#0E3211');
 
-    for (let y = 0; y < gridRows; y++) {
-      for (let x = 0; x < gridCols; x++) {
-        const tile = this.add.rectangle(
-          x * TILE_SIZE + TILE_SIZE / 2,
-          y * TILE_SIZE + TILE_SIZE / 2,
-          TILE_SIZE - 4,
-          TILE_SIZE - 4,
-          COLORS.GRASS_TALL
+    const W = this.level.largura_efetiva_tiles;
+    const H = this.level.altura_tiles;
+    const worldW = W * TILE_SIZE;
+    const worldH = H * TILE_SIZE;
+    this.originX = Math.round((GAME_WIDTH - worldW) / 2);
+    this.originY = Math.round((GAME_HEIGHT - worldH) / 2);
+
+    this.add.rectangle(
+      this.originX + worldW / 2,
+      this.originY + worldH / 2,
+      worldW + 16,
+      worldH + 16,
+      0x000000,
+      0.4
+    );
+
+    for (let row = 0; row < H; row++) {
+      this.tileGrid[row] = [];
+      for (let col = 0; col < W; col++) {
+        const type = this.level.tiles[row][col];
+        const color = TILE_COLOR[type] ?? 0x222222;
+        const rect = this.add.rectangle(
+          this.originX + col * TILE_SIZE + TILE_SIZE / 2,
+          this.originY + row * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE - 2,
+          TILE_SIZE - 2,
+          color
         );
-        tile.setData('cut', false);
-        tile.setData('gridX', x);
-        tile.setData('gridY', y);
+        rect.setData('type', type);
+        this.tileGrid[row][col] = rect;
       }
     }
 
-    // Player placeholder (Gentileza vai entrar na G9)
+    this.playerTileX = this.level.spawn_jogador.editor_x;
+    this.playerTileY = this.level.spawn_jogador.editor_y;
+    const px = this.tileToPx(this.playerTileX);
+    const py = this.tileToPy(this.playerTileY);
     this.player = this.add.rectangle(
-      GAME_WIDTH / 2,
-      GAME_HEIGHT / 2,
-      TILE_SIZE * 0.8,
-      TILE_SIZE * 0.8,
+      px,
+      py,
+      TILE_SIZE * 0.7,
+      TILE_SIZE * 0.7,
       COLORS.GENTILEZA_YELLOW
     );
     this.player.setStrokeStyle(4, COLORS.MOWER_ORANGE);
+    this.player.setDepth(10);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
 
-    // HUD
-    this.hudText = this.add.text(20, 20, 'CORTADO: 0%  |  TOQUE NAS BORDAS PARA MOVER', {
-      fontFamily: 'Arial Black',
-      fontSize: '32px',
-      color: '#FFFFFF',
-      stroke: '#000000',
-      strokeThickness: 4,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: { x: 16, y: 8 },
-    });
-    this.hudText.setScrollFactor(0);
-    this.hudText.setDepth(1000);
-
-    // Touch controls placeholder: clica em borda da tela pra mover
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const dx = pointer.worldX - this.player.x;
       const dy = pointer.worldY - this.player.y;
       if (Math.abs(dx) > Math.abs(dy)) {
-        this.player.setData('moveX', Math.sign(dx));
-        this.player.setData('moveY', 0);
+        this.requestDir(dx > 0 ? 'RIGHT' : 'LEFT');
       } else {
-        this.player.setData('moveX', 0);
-        this.player.setData('moveY', Math.sign(dy));
+        this.requestDir(dy > 0 ? 'DOWN' : 'UP');
       }
     });
 
-    console.log('GameScene: inicializada');
+    const hudBg = this.add.rectangle(GAME_WIDTH / 2, 36, GAME_WIDTH, 72, 0x000000, 0.6);
+    hudBg.setDepth(999);
+    this.hudText = this.add.text(GAME_WIDTH / 2, 36, '', {
+      fontFamily: 'Arial Black',
+      fontSize: '36px',
+      color: '#FFFFFF',
+      stroke: '#000000',
+      strokeThickness: 4,
+    });
+    this.hudText.setOrigin(0.5);
+    this.hudText.setDepth(1000);
+    this.updateHud();
+
+    if (this.level.tiles[this.playerTileY][this.playerTileX] === TILE.TALL) {
+      this.cutTileAt(this.playerTileX, this.playerTileY);
+    }
+  }
+
+  private tileToPx(tileX: number): number {
+    return this.originX + tileX * TILE_SIZE + TILE_SIZE / 2;
+  }
+
+  private tileToPy(tileY: number): number {
+    return this.originY + tileY * TILE_SIZE + TILE_SIZE / 2;
+  }
+
+  private requestDir(d: Dir): void {
+    if (d === this.dir) return;
+    this.pendingDir = d;
+    if (this.dir === 'NONE') {
+      this.dir = d;
+      this.pendingDir = 'NONE';
+    }
   }
 
   update(_time: number, delta: number): void {
     const dt = delta / 1000;
-    let dx = 0;
-    let dy = 0;
+    this.readInput();
 
-    if (this.cursors.left.isDown) dx = -1;
-    else if (this.cursors.right.isDown) dx = 1;
-    else if (this.cursors.up.isDown) dy = -1;
-    else if (this.cursors.down.isDown) dy = 1;
+    if (this.dir === 'NONE') return;
 
-    if (dx === 0 && dy === 0) {
-      dx = this.player.getData('moveX') || 0;
-      dy = this.player.getData('moveY') || 0;
+    const v = DIR_VEC[this.dir];
+    const oldPx = this.player.x;
+    const oldPy = this.player.y;
+    const newPx = oldPx + v.x * this.speed * dt;
+    const newPy = oldPy + v.y * this.speed * dt;
+
+    const targetTileX = this.playerTileX + v.x;
+    const targetTileY = this.playerTileY + v.y;
+
+    if (!this.canEnter(targetTileX, targetTileY)) {
+      // Trava na borda do tile atual
+      const cx = this.tileToPx(this.playerTileX);
+      const cy = this.tileToPy(this.playerTileY);
+      this.player.x = cx;
+      this.player.y = cy;
+      this.dir = 'NONE';
+      return;
     }
 
-    this.player.x += dx * this.speed * dt;
-    this.player.y += dy * this.speed * dt;
+    this.player.x = newPx;
+    this.player.y = newPy;
 
-    // Limita aos bounds
-    this.player.x = Phaser.Math.Clamp(this.player.x, TILE_SIZE / 2, GAME_WIDTH - TILE_SIZE / 2);
-    this.player.y = Phaser.Math.Clamp(this.player.y, TILE_SIZE / 2, GAME_HEIGHT - TILE_SIZE / 2);
+    const targetCx = this.tileToPx(targetTileX);
+    const targetCy = this.tileToPy(targetTileY);
 
-    // "Corta" tile onde o jogador esta
-    const gridX = Math.floor(this.player.x / TILE_SIZE);
-    const gridY = Math.floor(this.player.y / TILE_SIZE);
-    const key = `${gridX},${gridY}`;
+    const reached =
+      (v.x !== 0 && Math.sign(targetCx - oldPx) !== Math.sign(targetCx - newPx)) ||
+      (v.y !== 0 && Math.sign(targetCy - oldPy) !== Math.sign(targetCy - newPy)) ||
+      (this.player.x === targetCx && this.player.y === targetCy);
 
-    if (!this.cutTiles.has(key)) {
-      this.cutTiles.add(key);
-      this.markTileCut(gridX, gridY);
-      this.updateHud();
+    if (reached) {
+      this.player.x = targetCx;
+      this.player.y = targetCy;
+      this.playerTileX = targetTileX;
+      this.playerTileY = targetTileY;
+      this.onEnterTile(this.playerTileX, this.playerTileY);
+
+      if (this.pendingDir !== 'NONE' && this.pendingDir !== this.dir) {
+        const pv = DIR_VEC[this.pendingDir];
+        if (this.canEnter(this.playerTileX + pv.x, this.playerTileY + pv.y)) {
+          this.dir = this.pendingDir;
+        }
+        this.pendingDir = 'NONE';
+      }
     }
   }
 
-  private markTileCut(gridX: number, gridY: number): void {
-    const tiles = this.children.list.filter(obj => {
-      return obj instanceof Phaser.GameObjects.Rectangle &&
-             obj.getData('gridX') === gridX &&
-             obj.getData('gridY') === gridY &&
-             obj !== this.player;
-    });
+  private readInput(): void {
+    if (this.cursors.left.isDown) this.requestDir('LEFT');
+    else if (this.cursors.right.isDown) this.requestDir('RIGHT');
+    else if (this.cursors.up.isDown) this.requestDir('UP');
+    else if (this.cursors.down.isDown) this.requestDir('DOWN');
+  }
 
-    tiles.forEach(tile => {
-      (tile as Phaser.GameObjects.Rectangle).setFillStyle(COLORS.GRASS_CUT);
-      (tile as Phaser.GameObjects.Rectangle).setData('cut', true);
-    });
+  private canEnter(tx: number, ty: number): boolean {
+    if (tx < 0 || ty < 0) return false;
+    if (tx >= this.level.largura_efetiva_tiles) return false;
+    if (ty >= this.level.altura_tiles) return false;
+    return true;
+  }
+
+  private onEnterTile(tx: number, ty: number): void {
+    const type = this.level.tiles[ty][tx];
+    if (type === TILE.TALL) {
+      this.cutTileAt(tx, ty);
+    }
+  }
+
+  private cutTileAt(tx: number, ty: number): void {
+    this.level.tiles[ty][tx] = TILE.CUT;
+    this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
+    this.cutCount++;
+    this.updateHud();
+    if (this.cutCount >= this.level.grama_alta_para_cortar) {
+      this.hudText.setText(`FASE ${this.level.id} COMPLETA!`);
+    }
   }
 
   private updateHud(): void {
-    const totalTiles = Math.floor(GAME_WIDTH / TILE_SIZE) * Math.floor(GAME_HEIGHT / TILE_SIZE);
-    const pct = Math.round((this.cutTiles.size / totalTiles) * 100);
-    this.hudText.setText(`CORTADO: ${pct}%  |  USE SETAS OU TOQUE PRA MOVER`);
+    const target = this.level.grama_alta_para_cortar;
+    const pct = Math.round((this.cutCount / target) * 100);
+    this.hudText.setText(
+      `FASE ${this.level.id}  |  CORTADO ${this.cutCount}/${target}  (${pct}%)`
+    );
   }
 }

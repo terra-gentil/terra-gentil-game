@@ -6,12 +6,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Aqui vao carregar os assets reais nas proximas sprints
-    // Por enquanto, nada a carregar
+    this.load.json('fase_01', 'assets/maps/fase_01.json');
   }
 
   create(): void {
-    console.log('BootScene: inicializada');
+    console.log('BootScene: assets carregados');
     this.scene.start('TitleScene');
   }
 }

@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  base: './',
+// Em prod (GitHub Pages) o jogo fica em https://terra-gentil.github.io/terra-gentil-game/
+// Em dev usamos './' relativo pra abrir no celular sem dor.
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/terra-gentil-game/' : './',
   server: {
     host: true,
     port: 5173,
@@ -11,4 +13,4 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
-});
+}));

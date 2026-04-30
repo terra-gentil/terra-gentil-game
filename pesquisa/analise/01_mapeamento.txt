@@ -1,0 +1,55 @@
+MAPEAMENTO DE ARQUIVOS - Lawn Mower NES (sehugg/lawn-mower-nes)
+================================================================
+Total commits: 11
+Ultimo commit: 557e952 Update README.md
+Primeiro commit: 0fafc15 initial import from https://shiru.untergrund.net/software.shtml
+
+CATEGORIA: CODIGO_LOGICA (logica do jogo, ASM 6502)
+----------------------------------------------------
+game.dasm           40363B   - jogo principal (6502 ASM, dasm syntax)
+controller.asm        750B   - leitura do controle NES
+nesdefs.dasm         5241B   - definicoes/constantes do hardware NES
+title.asm            4506B   - tela de titulo
+rle.asm               576B   - decodificador RLE para nametables
+
+CATEGORIA: CODIGO_AUDIO (rotinas de audio, ASM)
+-----------------------------------------------
+famitone.asm        21650B   - lib FamiTone (driver de audio)
+famitone2.dasm      28674B   - lib FamiTone2 (versao mais nova)
+sounds.asm          16132B   - efeitos sonoros
+bgm_game.asm        10384B   - musica do gameplay
+bgm_title.asm        7445B   - musica do titulo
+bgm_levelclear.asm   1414B   - jingle de fase completada
+bgm_outoffuel.asm    1265B   - jingle de game over (sem combustivel)
+bgm_welldone.asm     9153B   - jingle de vitoria final
+bgm_instruments.asm  2459B   - instrumentos compartilhados
+
+CATEGORIA: DADOS_GRAFICOS (CHR, RLE, binarios)
+-----------------------------------------------
+patterns.chr         8192B   - tiles 8x8 do NES (CHR-ROM, 512 tiles)
+title.rle             781B   - nametable do titulo (compactada RLE)
+done.rle              864B   - nametable da tela final (compactada RLE)
+palette.asm          3916B   - paletas de cores (indices NES 0x00-0x3F)
+editor/levels.bin    3340B   - DADOS DAS 10 FASES (suspeita confirmada visualmente)
+editor/patterns.chr  8192B   - copia do CHR (usada pelo editor)
+
+CATEGORIA: EDITOR (Pascal/C++ ferramentas auxiliares)
+-----------------------------------------------------
+editor/editor.exe          469504B   - editor compilado (Windows PE)
+editor/src/Project1.cpp       814B   - main do editor (Borland C++ Builder)
+editor/src/Project1.bdsproj 17143B   - projeto BDS (Borland Developer Studio)
+editor/src/Project1.bdsproj.local 808B
+editor/src/Project1.res      4396B
+editor/src/Unit1.cpp         9698B   - logica principal do editor
+editor/src/Unit1.h           1773B   - header do editor
+editor/src/Unit1.dfm       115789B   - form do Delphi/BDS (UI)
+editor/src/tileset.bmp      12342B   - tileset visual do editor
+
+CATEGORIA: OUTROS (README, configs, ROM)
+-----------------------------------------
+README.md             211B   - readme do repo
+bin/game.dasm.rom   40976B   - ROM NES compilada (40KB = 16KB header + 32KB PRG + 8KB CHR)
+sound/lawn_mower.ftm 41303B   - projeto FamiTracker das musicas
+sound/sounds.ftm     4964B   - projeto FamiTracker dos efeitos
+
+TOTAL DE ARQUIVOS UNICOS: ~30 (excluindo .git)

@@ -1,0 +1,27 @@
+# Pesquisa do repo original
+pesquisa/lawn-mower-original/
+
+# Dependencias
+node_modules/
+jogo/node_modules/
+
+# Build
+dist/
+jogo/dist/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env
+.env
+.env.local

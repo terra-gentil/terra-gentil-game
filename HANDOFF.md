@@ -3,9 +3,9 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30 (G8 frontend ranking integrado)
+**Ultima atualizacao**: 2026-04-30 (G7.5 WebView no app + nickname via URL)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
-**Sprints concluidas**: G0..G8 (G7+G8 sem QA ainda, mas validados via uso)
+**Sprints concluidas**: G0..G8 + G7.5 (G7+G7.5+G8 sem QA ainda, mas validados via uso)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
 **Deploy frontend**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
 **Deploy backend**: https://terra-gentil-game-production.up.railway.app (Railway, deploy automatico no push pra main quando `backend/**` muda)
@@ -144,7 +144,7 @@ terra-gentil-game/
 - [x] **G6** — Audio (SFX sintetizado via Web Audio API + toggle de som)
 - [ ] **G6.5** — (futuro) Substituir SFX sintetizado por OGG real exportado das musicas/efeitos originais via FamiStudio
 - [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway validado em prod, sem QA ainda)
-- [ ] **G7.5** — WebView no app Terra Gentil
+- [x] **G7.5** — WebView no app Terra Gentil (GameScreen com landscape lock + nickname via URL param)
 - [x] **G8** — Frontend ranking (modal de submit + tela de top 50 + cache de nickname)
 - [ ] **G9** — Visual final (sprite Gentileza pelo design, tilemap real)
 - [ ] **G10** — Lancamento
@@ -557,6 +557,7 @@ Pode forcar via Actions tab > Run workflow.
 | G5 | 1, 2 | 0 | Limpo |
 | G6 | 1 | 0 | Limpo |
 | G7 | nenhum | n/a | Aguardando QA (politica on-demand) |
+| G7.5 | nenhum | n/a | Aguardando QA (politica on-demand) |
 | G8 | nenhum | n/a | Aguardando QA (politica on-demand) |
 
 Todos os P1/P2 das 3 rodadas de QA foram aplicados.
@@ -593,9 +594,19 @@ falso. Quem quer ranking real, JOGAR desde a fase 1.
 2. Tilemap pixel-art real (atualmente retangulos coloridos)
 3. Direcao de arte definitiva (qual estilo? referencia)
 
-### Pra G7.5 (WebView no app Terra Gentil)
-1. Definir como o app mobile vai embarcar o jogo (WebView nativo? iframe?)
-2. Comunicacao app <-> jogo se necessaria (passar nickname do user logado?)
+### G7.5 (CONCLUIDO 2026-04-30)
+Repo do app: `terra-gentil/terra-gentil-app` (clone local em `C:\Gitlab_hz\app-terragentil\`).
+Stack: Expo SDK 54 + React Native 0.81 + React Nav 7.
+
+Decisoes tomadas:
+- WebView aponta pra URL publica do GitHub Pages (auto-update do jogo sem release nova do app)
+- `react-native-webview` ja estava instalado, adicionado `expo-screen-orientation@~9.0.9`
+- Nova tela `mobile/src/components/redesign/GameScreen.tsx`: WebView fullscreen, landscape lock no mount, restore portrait no unmount, BackHandler do Android, status bar oculta, botao X overlay top-right, loading spinner ate WebView terminar de carregar
+- Pra navegacao usei state condicional em `App.tsx` (`showGame`) ao inves de stack route, pra casar com o padrao existente (Welcome / Loading / Diagnosis ja sao if/else no root)
+- Nickname via URL: app passa `?nickname=ANDRE` se user tiver, jogo le em `main.ts` via `adoptNicknameFromUrl()` que valida regex e seed o `localStorage["gentileza:nickname"]`. Modal de submit ja consome esse cache. Por ora app SEMPRE passa undefined (nao tem auth/user ainda no app), entao jogo cai no fluxo proprio. Wireado pro futuro.
+- Card "Resgate dos Jardins" no HomeTab acima dos atalhos rapidos, com Gamepad2 icon e botao "Jogar" coral
+
+Trade-off aceito: app ainda nao tem sistema de user/profile, entao nickname nao e propagado por enquanto. Quando o app implementar auth, basta passar `nickname` prop no GameScreen.
 
 ---
 

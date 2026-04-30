@@ -1,5 +1,5 @@
 import type { AllLevelsJson } from '../types/Level';
-import type { ScoreCreate } from '../types/Ranking';
+import { NICKNAME_REGEX, type ScoreCreate } from '../types/Ranking';
 
 export interface RunStats {
   active: boolean;
@@ -91,5 +91,19 @@ export function loadCachedNickname(): string {
 export function saveCachedNickname(nickname: string): void {
   try {
     localStorage.setItem(NICKNAME_KEY, nickname);
+  } catch { /* ignore */ }
+}
+
+// Le ?nickname= da URL (ex: WebView do app passando o user logado).
+// Se valido, sobrescreve o cache local pra que o modal pre-preencha com ele.
+export function adoptNicknameFromUrl(): void {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('nickname');
+    if (!raw) return;
+    const candidate = raw.toUpperCase();
+    if (NICKNAME_REGEX.test(candidate)) {
+      saveCachedNickname(candidate);
+    }
   } catch { /* ignore */ }
 }

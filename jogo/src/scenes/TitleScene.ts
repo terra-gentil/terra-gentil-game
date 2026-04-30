@@ -9,7 +9,7 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor('#1B5E20');
 
-    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 3, 'GENTILEZA', {
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 4, 'GENTILEZA', {
       fontFamily: 'Arial Black',
       fontSize: '96px',
       color: '#F5C97E',
@@ -18,7 +18,7 @@ export class TitleScene extends Phaser.Scene {
     });
     title.setOrigin(0.5);
 
-    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 3 + 100, 'Resgate dos Jardins', {
+    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 4 + 100, 'Resgate dos Jardins', {
       fontFamily: 'Arial',
       fontSize: '48px',
       color: '#FFFFFF',
@@ -27,7 +27,7 @@ export class TitleScene extends Phaser.Scene {
     });
     subtitle.setOrigin(0.5);
 
-    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT * 0.7, 'TOQUE PARA JOGAR', {
+    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 80, 'JOGAR DESDE A FASE 1', {
       fontFamily: 'Arial',
       fontSize: '40px',
       color: '#FFFFFF',
@@ -46,8 +46,33 @@ export class TitleScene extends Phaser.Scene {
     });
 
     startButton.on('pointerdown', () => {
-      this.scene.start('GameScene');
+      this.scene.start('GameScene', { levelIndex: 0 });
     });
+
+    // Selector de fase pra teste rapido (1-10)
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 200, 'OU PULE PRA UMA FASE:', {
+      fontFamily: 'Arial',
+      fontSize: '24px',
+      color: '#FFFFFF',
+    }).setOrigin(0.5).setAlpha(0.8);
+
+    const startX = GAME_WIDTH / 2 - 5 * 80;
+    for (let i = 0; i < 10; i++) {
+      const btn = this.add.text(startX + i * 80 + 40, GAME_HEIGHT - 140, String(i + 1), {
+        fontFamily: 'Arial Black',
+        fontSize: '32px',
+        color: '#FFFFFF',
+        backgroundColor: '#1B5E20',
+        padding: { x: 16, y: 12 },
+      });
+      btn.setOrigin(0.5);
+      btn.setInteractive({ useHandCursor: true });
+      btn.on('pointerover', () => btn.setBackgroundColor('#2E7D32'));
+      btn.on('pointerout', () => btn.setBackgroundColor('#1B5E20'));
+      btn.on('pointerdown', () => {
+        this.scene.start('GameScene', { levelIndex: i });
+      });
+    }
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 40, 'Gentileza é marca registrada de Terra Gentil', {
       fontFamily: 'Arial',

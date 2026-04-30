@@ -7,6 +7,8 @@ export const TILE = {
   STONE: 3,
 } as const;
 
+export type AllLevelsJson = LevelJson[];
+
 export interface LevelJson {
   id: number;
   largura_efetiva_tiles: number;

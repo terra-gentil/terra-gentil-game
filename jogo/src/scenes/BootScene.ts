@@ -6,7 +6,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.json('fase_01', 'assets/maps/fase_01.json');
+    this.load.json('niveis', 'assets/maps/niveis.json');
   }
 
   create(): void {

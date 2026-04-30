@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config/Constants';
 import { getSettings, toggleEyeStrainMode, toggleSound } from '../config/Settings';
 import { sfx } from '../audio/SfxPlayer';
+import { startRun } from '../state/RunStats';
 
 export class TitleScene extends Phaser.Scene {
   private eyeStrainButton!: Phaser.GameObjects.Text;
@@ -57,6 +58,7 @@ export class TitleScene extends Phaser.Scene {
       // prime() garante que AudioContext seja criado dentro deste user gesture
       // pra que o primeiro SFX no GameScene nao seja silenciado em mobile Safari
       sfx.prime();
+      startRun({ practiceMode: false, startLevelIndex: 0 });
       this.scene.start('GameScene', { levelIndex: 0 });
     });
 
@@ -117,9 +119,28 @@ export class TitleScene extends Phaser.Scene {
       btn.on('pointerout', () => btn.setBackgroundColor('#1B5E20'));
       btn.on('pointerdown', () => {
         sfx.prime();
+        // Selector e modo pratica: nao oferece submit pro ranking
+        startRun({ practiceMode: true, startLevelIndex: i });
         this.scene.start('GameScene', { levelIndex: i });
       });
     }
+
+    // Botao RANKING (canto superior direito)
+    const rankingBtn = this.add.text(GAME_WIDTH - 40, 60, 'RANKING', {
+      fontFamily: 'Arial Black',
+      fontSize: '28px',
+      color: '#FFFFFF',
+      backgroundColor: '#3A7BD5',
+      padding: { x: 20, y: 12 },
+    });
+    rankingBtn.setOrigin(1, 0.5);
+    rankingBtn.setInteractive({ useHandCursor: true });
+    rankingBtn.on('pointerover', () => rankingBtn.setBackgroundColor('#558B2F'));
+    rankingBtn.on('pointerout', () => rankingBtn.setBackgroundColor('#3A7BD5'));
+    rankingBtn.on('pointerdown', () => {
+      sfx.prime();
+      this.scene.start('RankingScene');
+    });
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 40, 'Gentileza é marca registrada de Terra Gentil', {
       fontFamily: 'Arial',

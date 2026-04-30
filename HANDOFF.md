@@ -3,9 +3,9 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30 (G7 backend em prod)
-**HEAD atual**: `bc810e6` (sera atualizado neste commit)
-**Sprints concluidas**: G0..G7 (G7 com deploy validado, sem QA ainda)
+**Ultima atualizacao**: 2026-04-30 (G8 frontend ranking integrado)
+**HEAD atual**: `a03405c` (sera atualizado neste commit)
+**Sprints concluidas**: G0..G8 (G7+G8 sem QA ainda, mas validados via uso)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
 **Deploy frontend**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
 **Deploy backend**: https://terra-gentil-game-production.up.railway.app (Railway, deploy automatico no push pra main quando `backend/**` muda)
@@ -100,16 +100,25 @@ terra-gentil-game/
 │  └─ src/
 │     ├─ main.ts                    <- entry point, instancia Phaser.Game
 │     ├─ config/
-│     │  ├─ GameConfig.ts           <- consts globais (1280x720, TILE_SIZE=64, COLORS)
+│     │  ├─ Constants.ts            <- consts globais isoladas (1280x720, TILE_SIZE=64, COLORS, RANKING_API_URL)
+│     │  ├─ GameConfig.ts           <- monta config Phaser, registra scenes, re-exporta Constants
 │     │  └─ Settings.ts             <- localStorage: eyeStrainMode, soundEnabled
 │     ├─ types/
-│     │  └─ Level.ts                <- LevelJson, AllLevelsJson, TILE consts
+│     │  ├─ Level.ts                <- LevelJson, AllLevelsJson, TILE consts
+│     │  └─ Ranking.ts              <- ScoreCreate, ScoreOut, TopResponse, NICKNAME_REGEX
+│     ├─ api/
+│     │  └─ RankingApi.ts           <- fetch wrapper, RankingApiError com kinds
+│     ├─ state/
+│     │  └─ RunStats.ts             <- tracking de cuts/level/time, modo pratica, cache de nickname
+│     ├─ ui/
+│     │  └─ SubmitModal.ts          <- modal HTML overlay com input de nickname
 │     ├─ audio/
 │     │  └─ SfxPlayer.ts            <- 6 SFX sintetizados Web Audio API
 │     └─ scenes/
 │        ├─ BootScene.ts            <- preload niveis.json
-│        ├─ TitleScene.ts           <- titulo + JOGAR + selector 1-10 + 2 toggles
-│        └─ GameScene.ts            <- engine + render + camera + game loop + D-pad
+│        ├─ TitleScene.ts           <- titulo + JOGAR + selector 1-10 + 2 toggles + botao RANKING
+│        ├─ GameScene.ts            <- engine + render + camera + game loop + D-pad + dispara modal
+│        └─ RankingScene.ts         <- tela do top 50 com retry em erro
 │
 └─ qa/                              <- relatorios de QA por sub-agentes Sonnet
    ├─ README.md                     <- estrutura e politica
@@ -136,7 +145,7 @@ terra-gentil-game/
 - [ ] **G6.5** — (futuro) Substituir SFX sintetizado por OGG real exportado das musicas/efeitos originais via FamiStudio
 - [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway validado em prod, sem QA ainda)
 - [ ] **G7.5** — WebView no app Terra Gentil
-- [ ] **G8** — Frontend ranking
+- [x] **G8** — Frontend ranking (modal de submit + tela de top 50 + cache de nickname)
 - [ ] **G9** — Visual final (sprite Gentileza pelo design, tilemap real)
 - [ ] **G10** — Lancamento
 
@@ -224,6 +233,46 @@ Mudancas no Title NAO refletem em GameScene em curso (so na proxima entrada).
 Scroll vertical nao existe (mesmo do original). `setBounds(0, 0,
 max(worldW, GAME_WIDTH), GAME_HEIGHT)` + `startFollow(player, false,
 0.1, 0)`. Sem offsetX hardcoded (pegada do QA G3 pass-01).
+
+### Constantes em arquivo isolado (Constants.ts)
+Pra evitar dependencia circular: `GameConfig.ts` importa as scenes pra montar
+o config Phaser, e as scenes precisam das constantes (GAME_WIDTH, COLORS, etc.).
+Se as constantes morassem em `GameConfig.ts`, as scenes importariam GameConfig
+fechando o ciclo, e dependendo da ordem de avaliacao ESM as constantes ficavam
+em TDZ no momento de uso (`COLORS` nao acessivel antes de inicializar). G8
+quebrou tudo na hora que adicionou RankingScene mudando ordem dos imports.
+Solucao: `Constants.ts` so com constantes (zero imports de scenes), scenes
+importam direto de Constants. `GameConfig.ts` re-exporta tudo pra compat de
+imports legados.
+
+### Stats de run vivem fora da scene
+`state/RunStats.ts` mantem `cutsByLevel`, `highestLevel`, `startTimeMs`,
+`practiceMode` em modulo singleton (nao no `Phaser.registry` — Phaser destroi
+registry no Game.destroy mas o singleton sobrevive a `scene.start()`).
+- `startRun({ practiceMode, startLevelIndex })` resetta tudo. Chamado so do
+  TitleScene em JOGAR (practice false) ou em selector 1-10 (practice true).
+- `enterLevel(idx)` no `create()` da GameScene atualiza `highestLevel`.
+- `recordCut(idx)` em cada `cutTileAt`.
+- `endRun()` quando submit OK, win+pulou, ou Esc pro Title.
+- `isRankingEligible()` controla se modal aparece (false em practice mode).
+
+### Modal de submit e HTML overlay, nao Phaser
+`ui/SubmitModal.ts` cria div absoluto no `<body>` com input nativo. Razao:
+mobile aciona teclado virtual do OS sem custo, e Phaser nao tem widget de
+input nativo. Estilo CSS fica em `index.html` (`.submit-modal-card` etc).
+Flag `submitModalOpen` na GameScene bloqueia handlers de pointer/keyboard
+enquanto o modal estiver aberto pra evitar input duplo no canvas.
+
+### Nickname valido: regex [A-Z0-9_]{3,12}
+Espelha exatamente o regex do backend (`models.py:ScoreCreate.nickname`).
+Validacao client-side em tempo real (botao ENVIAR fica desabilitado se
+invalido). Auto-uppercase no input. Cache em `localStorage["gentileza:nickname"]`
+sobrevive entre sessoes.
+
+### Backend rejeita pct=100 com level<10
+Constraint do backend (`validation.py`). `buildSubmitPayload` clampa pct pra
+99 quando highest<10 pra nao quebrar submit de quem chegou perto mas nao
+zerou. Quem zerou (level=10) pode mandar 100 normal.
 
 ### D-pad sempre visivel
 4 botoes bottom-left, depth 2000 (rectangle) + 2001 (arrow). Filtra
@@ -505,6 +554,7 @@ Pode forcar via Actions tab > Run workflow.
 | G5 | 1, 2 | 0 | Limpo |
 | G6 | 1 | 0 | Limpo |
 | G7 | nenhum | n/a | Aguardando QA (politica on-demand) |
+| G8 | nenhum | n/a | Aguardando QA (politica on-demand) |
 
 Todos os P1/P2 das 3 rodadas de QA foram aplicados.
 
@@ -515,22 +565,34 @@ continuar cobrindo TODAS as sprints existentes.
 
 ---
 
-## Proximas decisoes pendentes (G8)
+## Proximas decisoes pendentes (G9 / G7.5)
 
-Backend G7 em prod, URL `https://terra-gentil-game-production.up.railway.app`.
-Para iniciar G8 (frontend ranking), preciso de input:
+G7 e G8 fechados. Backend prod em `https://terra-gentil-game-production.up.railway.app`,
+frontend ranking integrado e validado em browser.
 
-1. Tela de submit de score: aparece automatica em level clear (fase 10) ou
-   tem opcao "submeter ranking" no menu? Default sugerido: aparece em "you win"
-2. Validacao client-side do nickname antes de submeter (mesmo regex `[A-Z0-9_]{3,12}` do backend)
-3. Tela de top: substitui o selector 1-10 ou e nova scene? Default: nova scene
-   acessada via botao no Title
-4. Cache local: lembrar nickname do ultimo submit (localStorage `gentileza:nickname`)?
-5. URL do backend: hardcoded em `GameConfig.ts` ou via env var Vite (`VITE_RANKING_API_URL`)?
-   Default sugerido: env var, com fallback hardcoded pro endereco prod
+**Decisoes UX tomadas em G8** (defaults aceitos pelo usuario):
+1. Submit aparece automatico em level clear da fase 10 E em game over (escolha
+   minha pra nao restringir submit a quem zerou — autonomy decision)
+2. Validacao client-side com regex `[A-Z0-9_]{3,12}`, auto-uppercase, feedback
+   visual em tempo real
+3. Tela de top em scene nova `RankingScene`, acessada por botao "RANKING" no
+   canto superior direito do Title
+4. Cache de nickname em `localStorage["gentileza:nickname"]`
+5. URL hardcoded em `Constants.ts` (decisao pragmatica — env vars Vite seriam
+   over-engineering pra um projeto so)
 
-Conheco os contratos do backend G7 (formato JSON, codigos HTTP, ordering)
-entao a integracao em si nao tem ambiguidade. So preciso UX confirmada.
+**Trade-off aceito**: selector 1-10 do Title coloca em modo pratica (NAO
+oferece submit em game over/win). Justo: comecou no meio, total_pct seria
+falso. Quem quer ranking real, JOGAR desde a fase 1.
+
+### Pra G9 (visual final)
+1. Sprite real do mascote Gentileza (atualmente retangulo amarelo com borda)
+2. Tilemap pixel-art real (atualmente retangulos coloridos)
+3. Direcao de arte definitiva (qual estilo? referencia)
+
+### Pra G7.5 (WebView no app Terra Gentil)
+1. Definir como o app mobile vai embarcar o jogo (WebView nativo? iframe?)
+2. Comunicacao app <-> jogo se necessaria (passar nickname do user logado?)
 
 ---
 

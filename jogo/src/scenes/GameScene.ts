@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS } from '../config/Constants';
 import { TILE, type AllLevelsJson, type LevelJson } from '../types/Level';
 import { getSettings, type Settings } from '../config/Settings';
 import { sfx } from '../audio/SfxPlayer';
+import { enterLevel, recordCut, isRankingEligible, endRun } from '../state/RunStats';
+import { showSubmitModal } from '../ui/SubmitModal';
 
 type Dir = 'NONE' | 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 
@@ -120,6 +122,7 @@ export class GameScene extends Phaser.Scene {
   private fuelSpawnTimer?: Phaser.Time.TimerEvent;
   private gameOver = false;
   private advancing = false;
+  private submitModalOpen = false;
 
   private vs!: VisualScale;
 
@@ -141,6 +144,7 @@ export class GameScene extends Phaser.Scene {
     this.fuelSpawnTimer = undefined;
     this.gameOver = false;
     this.advancing = false;
+    this.submitModalOpen = false;
     const settings = getSettings();
     this.vs = visualScaleFor(settings);
     sfx.setMuted(!settings.soundEnabled);
@@ -155,6 +159,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.level = JSON.parse(JSON.stringify(this.allLevels[this.levelIndex])) as LevelJson;
+
+    enterLevel(this.levelIndex);
 
     this.cameras.main.setBackgroundColor(this.vs.bgColor);
 
@@ -219,6 +225,7 @@ export class GameScene extends Phaser.Scene {
       currentlyOver: Phaser.GameObjects.GameObject[]
     ) => {
       if (this.advancing) return;
+      if (this.submitModalOpen) return;
       if (currentlyOver.length > 0) return;
       if (this.levelCleared) {
         this.advanceLevel();
@@ -240,12 +247,15 @@ export class GameScene extends Phaser.Scene {
 
     const onConfirm = () => {
       if (this.advancing) return;
+      if (this.submitModalOpen) return;
       if (this.levelCleared) this.advanceLevel();
       else if (this.gameOver) this.restartLevel();
     };
     const onEscape = () => {
       if (this.advancing) return;
+      if (this.submitModalOpen) return;
       this.advancing = true;
+      endRun();
       this.scene.start('TitleScene');
     };
     const kb = this.input.keyboard!;
@@ -361,6 +371,7 @@ export class GameScene extends Phaser.Scene {
 
       rect.on('pointerdown', () => {
         if (this.advancing) return;
+        if (this.submitModalOpen) return;
         if (this.levelCleared) {
           this.advanceLevel();
           return;
@@ -518,6 +529,7 @@ export class GameScene extends Phaser.Scene {
     this.level.tiles[ty][tx] = TILE.CUT;
     this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
     this.cutCount++;
+    recordCut(this.levelIndex);
     this.updateHud();
     if (this.cutCount >= this.level.grama_alta_para_cortar) {
       this.onLevelClear();
@@ -634,6 +646,10 @@ export class GameScene extends Phaser.Scene {
     this.centerMessage.setScrollFactor(0);
     // Depth 2002 fica acima do D-pad (rectangle 2000 + arrow text 2001)
     this.centerMessage.setDepth(2002);
+
+    if (isLast && isRankingEligible()) {
+      this.openSubmitModal('win');
+    }
   }
 
   private triggerGameOver(): void {
@@ -664,6 +680,35 @@ export class GameScene extends Phaser.Scene {
     this.centerMessage.setScrollFactor(0);
     // Depth 2002 fica acima do D-pad (rectangle 2000 + arrow text 2001)
     this.centerMessage.setDepth(2002);
+
+    if (isRankingEligible()) {
+      this.openSubmitModal('gameOver');
+    }
+  }
+
+  private openSubmitModal(reason: 'gameOver' | 'win'): void {
+    this.submitModalOpen = true;
+    showSubmitModal(this.allLevels, {
+      onSubmitted: () => {
+        this.submitModalOpen = false;
+        endRun();
+        this.advancing = true;
+        this.scene.start('RankingScene');
+      },
+      onSkipped: () => {
+        this.submitModalOpen = false;
+        if (reason === 'win') {
+          // Win pulou submit — run terminou
+          endRun();
+          this.advancing = true;
+          this.scene.start('TitleScene');
+          return;
+        }
+        // gameOver + pulou submit: deixa a run viva. Jogador pode dar restart
+        // (Space/click) e seguir tentando, ou Esc volta pro Title (que ai sim
+        // chama endRun via onEscape).
+      },
+    });
   }
 
   private advanceLevel(): void {

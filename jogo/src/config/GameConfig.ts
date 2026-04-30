@@ -2,22 +2,12 @@ import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene';
 import { TitleScene } from '../scenes/TitleScene';
 import { GameScene } from '../scenes/GameScene';
+import { RankingScene } from '../scenes/RankingScene';
+import { GAME_WIDTH, GAME_HEIGHT } from './Constants';
 
-export const GAME_WIDTH = 1280;
-export const GAME_HEIGHT = 720;
-
-export const TILE_SIZE = 64;
-
-export const COLORS = {
-  GRASS_TALL: 0x1B5E20,
-  GRASS_CUT: 0x66BB6A,
-  GENTILEZA_YELLOW: 0xF5C97E,
-  GENTILEZA_LEAF: 0x4FBA53,
-  MOWER_ORANGE: 0xE8631E,
-  HUD_BLUE: 0x3A7BD5,
-  WHITE: 0xFFFFFF,
-  BLACK: 0x000000,
-};
+// Re-export pra compat com imports legados de '../config/GameConfig'.
+// Novos arquivos devem importar de '../config/Constants' direto.
+export { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS, RANKING_API_URL } from './Constants';
 
 export const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -38,7 +28,7 @@ export const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, GameScene],
+  scene: [BootScene, TitleScene, GameScene, RankingScene],
   pixelArt: true,
   roundPixels: true,
   input: {

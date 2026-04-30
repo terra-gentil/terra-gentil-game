@@ -4,7 +4,7 @@
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
 **Ultima atualizacao**: 2026-04-30 (G8 frontend ranking integrado)
-**HEAD atual**: `a03405c` (sera atualizado neste commit)
+**HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 (G7+G8 sem QA ainda, mas validados via uso)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
 **Deploy frontend**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
@@ -154,6 +154,9 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+67b06cd G8: frontend ranking - submit modal, tela de top 50 e cache de nickname
+a03405c G7: deploy Railway concluido + HANDOFF atualizado com URL prod
+bc810e6 handoff: atualiza pos-G7 e nova politica de QA on-demand
 9d87925 G7: backend de ranking FastAPI + SQLite (deploy pendente)
 865d9a9 handoff: documento de transferencia de contexto pra retomar projeto em novo chat
 67bb45f qa-fixes round-3: AudioNode disconnect, prime context, audio dissonance

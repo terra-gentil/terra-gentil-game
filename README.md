@@ -33,7 +33,7 @@ Veja `COMO_RODAR.md` pra detalhes.
 - [x] G2 - Engine core (movimento, grid, corte)
 - [x] G3 - Camera + carregamento de fases
 - [x] G4 - Game loop completo (combustivel, penalty, galao, game over)
-- [ ] G5 - Mobile (D-pad touch, modo olhos cansados)
+- [x] G5 - Mobile (D-pad touch, modo olhos cansados)
 - [ ] G6 - Audio
 - [ ] G7 - Backend ranking (FastAPI Railway)
 - [ ] G7.5 - WebView no app Terra Gentil

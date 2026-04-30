@@ -16,8 +16,8 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#1B5E20');
 
     // Renderiza grid de gramado alto (placeholder)
-    const gridCols = Math.ceil(GAME_WIDTH / TILE_SIZE);
-    const gridRows = Math.ceil(GAME_HEIGHT / TILE_SIZE);
+    const gridCols = Math.floor(GAME_WIDTH / TILE_SIZE);
+    const gridRows = Math.floor(GAME_HEIGHT / TILE_SIZE);
 
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < gridCols; x++) {
@@ -124,7 +124,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateHud(): void {
-    const totalTiles = Math.ceil(GAME_WIDTH / TILE_SIZE) * Math.ceil(GAME_HEIGHT / TILE_SIZE);
+    const totalTiles = Math.floor(GAME_WIDTH / TILE_SIZE) * Math.floor(GAME_HEIGHT / TILE_SIZE);
     const pct = Math.round((this.cutTiles.size / totalTiles) * 100);
     this.hudText.setText(`CORTADO: ${pct}%  |  USE SETAS OU TOQUE PRA MOVER`);
   }

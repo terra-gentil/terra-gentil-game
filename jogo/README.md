@@ -4,11 +4,11 @@ Jogo web do mascote Gentileza, do app Terra Gentil. Inspirado no Lawn Mower NES 
 
 ## Stack
 
-- Phaser 3
+- Phaser 3.90
 - TypeScript
 - Vite
-- Deploy: GitHub Pages
-- Backend ranking: FastAPI no Railway
+- Deploy: GitHub Pages (`base: '/terra-gentil-game/'` em build, `'./'` em dev)
+- Backend ranking (futuro): FastAPI no Railway
 
 ## Rodar localmente
 
@@ -25,19 +25,20 @@ Abre `http://localhost:5173` no celular ou desktop.
 npm run build
 ```
 
-Saída em `dist/`.
+Saida em `dist/`.
 
 ## Estrutura
 
 - `src/scenes/` - cenas do Phaser (Boot, Title, Game)
-- `src/config/` - configuração do jogo e constantes
+- `src/config/` - configuracao + Settings (localStorage)
+- `src/types/` - tipos compartilhados (Level)
 - `public/assets/` - sprites, audio, mapas
 
 ## Marca
 
-Gentileza é marca registrada nas classes 28 e 41 do INPI.
+Gentileza e marca registrada nas classes 28 e 41 do INPI.
 Inspirado em Lawn Mower NES (Shiru, 2011), reimplementado do zero.
 
 ## Status
 
-Em desenvolvimento. Sprint atual: G0 (engenharia reversa concluída, scaffolding inicial).
+Em desenvolvimento. Status detalhado no `README.md` da raiz do repo.

@@ -1,39 +1,43 @@
 # Como rodar o jogo localmente
 
+Os comandos abaixo assumem que voce esta na raiz do repo clonado
+(ex: `cd terra-gentil-game`). Os blocos com `cd jogo` vao a partir
+dali. Ajuste os caminhos conforme onde voce clonou.
+
 ## Primeira vez
 
-```powershell
-cd C:\Gitlab_hz\terra-gentil-game\jogo
+```bash
+cd jogo
 npm install
 ```
 
 ## Rodar em modo dev (hot reload)
 
-```powershell
-cd C:\Gitlab_hz\terra-gentil-game\jogo
+```bash
+cd jogo
 npm run dev
 ```
 
 Abre no navegador: http://localhost:5173
 
 Pra testar no celular na mesma rede Wi-Fi:
-1. Descobre IP do PC: `ipconfig` (procura IPv4 do adaptador Wi-Fi)
+1. Descobre o IP do PC: `ipconfig` no Windows ou `ip addr` no Linux/Mac (procura IPv4 do adaptador Wi-Fi)
 2. No celular, abre: `http://<seu-ip>:5173`
 3. Joga e valida tamanho dos sprites pro publico 40-70
 
-## Build de produção
+## Build de producao
 
-```powershell
-cd C:\Gitlab_hz\terra-gentil-game\jogo
+```bash
+cd jogo
 npm run build
 ```
 
-Saida em `jogo\dist\`. Arquivos prontos pra GitHub Pages.
+Saida em `jogo/dist/`. Arquivos prontos pra GitHub Pages.
 
 ## Preview do build
 
-```powershell
-cd C:\Gitlab_hz\terra-gentil-game\jogo
+```bash
+cd jogo
 npm run preview
 ```
 

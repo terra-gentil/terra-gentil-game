@@ -256,6 +256,7 @@ export class GameScene extends Phaser.Scene {
       kb.off('keydown-ENTER', onConfirm);
       kb.off('keydown-ESC', onEscape);
       this.fuelSpawnTimer?.remove();
+      this.clearFuelBarrel();
     });
 
     this.buildHud();
@@ -325,7 +326,9 @@ export class GameScene extends Phaser.Scene {
 
   private buildDPad(): void {
     const cx = 180;
-    const cy = GAME_HEIGHT - 180;
+    // Em modo olhos cansados, botoes maiores precisam de mais margem do bottom
+    // pra nao bater no home indicator do iPhone (P1 do QA G5 pass-01).
+    const cy = GAME_HEIGHT - (this.vs.dpadButtonSize / 2 + this.vs.dpadArm + 20);
     const arm = this.vs.dpadArm;
     const size = this.vs.dpadButtonSize;
     const buttons: Array<{ dir: Dir; offsetX: number; offsetY: number; arrow: string }> = [
@@ -615,7 +618,8 @@ export class GameScene extends Phaser.Scene {
     });
     this.centerMessage.setOrigin(0.5);
     this.centerMessage.setScrollFactor(0);
-    this.centerMessage.setDepth(2000);
+    // Depth 2002 fica acima do D-pad (rectangle 2000 + arrow text 2001)
+    this.centerMessage.setDepth(2002);
   }
 
   private triggerGameOver(): void {
@@ -643,7 +647,8 @@ export class GameScene extends Phaser.Scene {
     );
     this.centerMessage.setOrigin(0.5);
     this.centerMessage.setScrollFactor(0);
-    this.centerMessage.setDepth(2000);
+    // Depth 2002 fica acima do D-pad (rectangle 2000 + arrow text 2001)
+    this.centerMessage.setDepth(2002);
   }
 
   private advanceLevel(): void {

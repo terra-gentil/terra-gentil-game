@@ -4,8 +4,8 @@
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
 **Ultima atualizacao**: 2026-04-30
-**HEAD atual**: `67bb45f021c44f914e004e223a39fbe108eeeb42`
-**Sprints concluidas**: G0..G6
+**HEAD atual**: `9d87925` (apos G7 backend)
+**Sprints concluidas**: G0..G7 (G7 sem QA ainda)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
 **Deploy**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
 **Local**: `C:\Gitlab_hz\terra-gentil-game\`
@@ -133,7 +133,7 @@ terra-gentil-game/
 - [x] **G5** — Mobile (D-pad virtual + modo olhos cansados com persistencia)
 - [x] **G6** — Audio (SFX sintetizado via Web Audio API + toggle de som)
 - [ ] **G6.5** — (futuro) Substituir SFX sintetizado por OGG real exportado das musicas/efeitos originais via FamiStudio
-- [ ] **G7** — Backend ranking (FastAPI no Railway)
+- [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway pendente, sem QA ainda)
 - [ ] **G7.5** — WebView no app Terra Gentil
 - [ ] **G8** — Frontend ranking
 - [ ] **G9** — Visual final (sprite Gentileza pelo design, tilemap real)
@@ -144,6 +144,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+9d87925 G7: backend de ranking FastAPI + SQLite (deploy pendente)
+865d9a9 handoff: documento de transferencia de contexto pra retomar projeto em novo chat
 67bb45f qa-fixes round-3: AudioNode disconnect, prime context, audio dissonance
 aa2633a G6: SFX sintetizado via Web Audio API + toggle de som
 a67a26b qa-fixes round-2: G4 cleanup, G5 depth/dpad, docs
@@ -310,13 +312,23 @@ Acima do D-pad pra nao ser obstruidas em level clear / game over.
 4. Dropar arquivos em `jogo/public/assets/audio/{nome}.ogg`
 5. Avisar Claude pra trocar `sfx.*()` por `this.sound.play(key)`
 
-### Bloqueantes pra G7 (ranking)
-1. **Conta Railway** ou outro PaaS (Render, Fly.io)
-2. Decisao do schema do score:
-   - Sugerido: `nickname` (3-12 chars), `level_reached` (1-10), `total_pct` (0-100), `time_seconds`, sem PII
-3. Decisao de top-N (sugerido top 50)
-4. Decisao de retencao (forever? 30 dias? mensal?)
-5. CORS allowlist: `https://terra-gentil.github.io`
+### Bloqueantes pra deploy do G7 (backend ja codado em backend/)
+Decisoes ja tomadas (defaults aceitos pelo usuario em 2026-04-30):
+- Schema: `nickname` [A-Z0-9_]{3,12}, `level_reached` 1-10, `total_pct` 0-100, `time_seconds` 1-36000. Zero PII.
+- Top-N: 50 (configuravel via query param ate 100)
+- Retencao: forever inicial
+- CORS: `https://terra-gentil.github.io` + `http://localhost:5173`
+- Rate limit: 5/min POST, 60/min GET
+- Anti-abuse: tempo minimo 3s/level + pct 100 so com level 10
+
+Acoes manuais pendentes do usuario:
+1. Criar projeto Railway novo (recomendado, nao reusar projeto existente)
+2. Conectar repo `terra-gentil/terra-gentil-game`, definir Root Directory = `backend`
+3. Criar volume montado em `/data` (1 GB)
+4. Configurar env vars: `DB_PATH=/data/scores.db`, `CORS_ORIGINS=https://terra-gentil.github.io,http://localhost:5173`
+5. Smoke test pos-deploy: curl `/health`, POST scores, GET top
+6. Rodar QA round 4 quando o usuario julgar (politica nova: on-demand)
+7. Anotar URL publica do service pra G8 (frontend ranking)
 
 ### Pendentes pra G9 (visual final)
 1. Sprite real do mascote Gentileza (atualmente e retangulo amarelo com borda laranja)
@@ -484,25 +496,32 @@ Pode forcar via Actions tab > Run workflow.
 | G4 | 1, 2 | 0 | Limpo |
 | G5 | 1, 2 | 0 | Limpo |
 | G6 | 1 | 0 | Limpo |
+| G7 | nenhum | n/a | Aguardando QA (politica on-demand) |
 
 Todos os P1/P2 das 3 rodadas de QA foram aplicados.
 
+**Politica de QA (atualizada 2026-04-30)**: rodar so quando o usuario pedir
+explicitamente. Sub-agentes em paralelo consomem muitos tokens; o usuario
+sinalizou que talvez agrupe revisoes de 4 em 4 sprints. Quando rodar,
+continuar cobrindo TODAS as sprints existentes.
+
 ---
 
-## Proximas decisoes pendentes (G7)
+## Proximas decisoes pendentes (G8)
 
-Antes de iniciar G7, preciso de input:
+G7 backend ja codado e commitado em `backend/`. Para iniciar G8 (frontend ranking),
+preciso de input:
 
-1. Conta Railway (ou outro PaaS)? Se nao, instalar primeiro
-2. Schema do score: campos exatos, tamanhos
-3. Top-N (10/50/100?)
-4. Retencao (forever / X dias?)
-5. Privacy: quero confirmar zero PII no schema (so nickname curto e numeros)
-6. CORS: confirmar allowlist com `https://terra-gentil.github.io`
-7. Rate limit: quanto por IP/sessao?
+1. URL publica do backend Railway (sai apos deploy manual do usuario)
+2. Tela de submit de score: aparece automatica em level clear (fase 10) ou
+   tem opcao "submeter ranking" no menu? Default sugerido: aparece em "you win"
+3. Validacao client-side do nickname antes de submeter (mesmo regex do backend)
+4. Tela de top: substitui o selector 1-10 ou e nova scene? Default: nova scene
+   acessada via botao no Title
+5. Cache local: lembrar nickname do ultimo submit (localStorage `gentileza:nickname`)?
 
-Posso codar o backend e te passar os passos pra deployar quando tiver
-isso decidido.
+Conheco os contratos do backend G7 (formato JSON, codigos HTTP, ordering)
+entao a integracao em si nao tem ambiguidade. So preciso UX confirmada.
 
 ---
 

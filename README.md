@@ -2,10 +2,13 @@
 
 Subprojeto 1.2 do app Terra Gentil. Jogo web pixel-art do mascote Gentileza.
 
+Inspirado em **Lawn Mower NES** (Shiru, 2011, Dominio Publico).
+Veja `LICENSE` e `pesquisa/analise/ANALISE_LAWN_MOWER.md` para creditos completos.
+
 ## Estrutura
 
-- `pesquisa/` - engenharia reversa do Lawn Mower NES original (referencia, nao versionado)
-- `jogo/` - codigo do jogo Phaser 3 + TypeScript
+- `pesquisa/` - engenharia reversa do Lawn Mower NES original (relatorios versionados, repo original gitignored)
+- `jogo/` - codigo do jogo Phaser 3 + TypeScript (codigo novo, escrito do zero)
 
 ## Quick start
 
@@ -16,6 +19,12 @@ npm run dev
 ```
 
 Veja `COMO_RODAR.md` pra detalhes.
+
+## Stack
+
+- Phaser 3.90 + TypeScript + Vite
+- Deploy frontend: GitHub Pages
+- Backend ranking (futuro): FastAPI no Railway
 
 ## Status
 
@@ -34,5 +43,14 @@ Veja `COMO_RODAR.md` pra detalhes.
 
 ## Marca
 
-Gentileza é marca registrada nas classes 28 e 41 do INPI.
-Inspirado em Lawn Mower NES (Shiru, 2011).
+Gentileza e marca registrada da Terra Gentil nas classes 28 e 41 do INPI.
+
+## Creditos
+
+- **Lawn Mower NES** (2011) por **Shiru** (shiru@mail.ru) - inspiracao do gameplay, codigo original em Dominio Publico em https://github.com/sehugg/lawn-mower-nes
+- **Phaser 3** por Photon Storm Ltd, MIT License
+- **Terra Gentil** - marca, conceito do mascote Gentileza, brief do jogo
+
+## Licenca
+
+MIT (ver `LICENSE`).

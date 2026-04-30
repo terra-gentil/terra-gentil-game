@@ -1,0 +1,49 @@
+MIT License
+
+Copyright (c) 2026 Terra Gentil
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Atribuicao e creditos
+
+Este projeto e um port/reimaginacao do **Lawn Mower NES** (2011), criado por
+**Shiru** (shiru@mail.ru) e publicado em https://shiru.untergrund.net/software.shtml
+e https://github.com/sehugg/lawn-mower-nes.
+
+O codigo fonte original do Lawn Mower NES foi liberado em **Dominio Publico**
+(declarado no header de `game.dasm`), o que nos permite estudar, decodificar
+e reimplementar livremente. Nenhum bit do codigo ASM original foi copiado para
+este projeto: todo o codigo TypeScript em `jogo/` e novo, escrito do zero
+usando Phaser 3.
+
+A engenharia reversa do jogo original (em `pesquisa/analise/`) inclui apenas
+nossos relatorios e scripts de extracao. O repo do Shiru e clonado durante
+o desenvolvimento mas NAO e versionado neste repositorio (gitignored).
+
+A marca **Gentileza** e propriedade da Terra Gentil (registrada no INPI nas
+classes 28 e 41) e usada neste projeto sob autorizacao.
+
+A biblioteca **Phaser 3** e propriedade da Photon Storm Ltd, distribuida sob
+licenca MIT.
+
+A biblioteca **FamiTone** (audio NES, no repo original do Shiru) tambem e
+de Shiru, dominio publico, e nao e usada neste projeto JS (audio sera feito
+com Web Audio API).

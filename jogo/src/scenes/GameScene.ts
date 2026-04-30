@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, COLORS } from '../config/GameConfig';
 import { TILE, type AllLevelsJson, type LevelJson } from '../types/Level';
 import { getSettings, type Settings } from '../config/Settings';
+import { sfx } from '../audio/SfxPlayer';
 
 type Dir = 'NONE' | 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 
@@ -140,7 +141,9 @@ export class GameScene extends Phaser.Scene {
     this.fuelSpawnTimer = undefined;
     this.gameOver = false;
     this.advancing = false;
-    this.vs = visualScaleFor(getSettings());
+    const settings = getSettings();
+    this.vs = visualScaleFor(settings);
+    sfx.setMuted(!settings.soundEnabled);
   }
 
   create(): void {
@@ -484,13 +487,16 @@ export class GameScene extends Phaser.Scene {
     const type = this.level.tiles[ty][tx];
     if (type === TILE.TALL) {
       this.cutTileAt(tx, ty);
+      sfx.cut();
     } else if (type === TILE.FLOWERS) {
       this.applyFuelPenalty(PENALTY_FLOWERS);
       this.level.tiles[ty][tx] = TILE.CUT;
       this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
+      sfx.penaltyFlowers();
     } else if (type === TILE.STONE) {
       this.applyFuelPenalty(PENALTY_STONE);
       this.cameras.main.shake(250, 0.008);
+      sfx.penaltyStone();
     }
   }
 
@@ -587,6 +593,7 @@ export class GameScene extends Phaser.Scene {
     this.fuelBarrel.sprite.destroy();
     this.fuelBarrel = undefined;
     this.scheduleFuelSpawn();
+    sfx.fuelPickup();
   }
 
   private clearFuelBarrel(): void {
@@ -602,6 +609,7 @@ export class GameScene extends Phaser.Scene {
     this.pendingDir = 'NONE';
     this.fuelSpawnTimer?.remove();
     this.clearFuelBarrel();
+    sfx.levelClear();
     const isLast = this.levelIndex >= this.allLevels.length - 1;
     const msg = isLast
       ? 'PARABENS! TODAS AS FASES CONCLUIDAS\n\nToque ou aperte ESPACO pra voltar ao titulo'
@@ -629,6 +637,7 @@ export class GameScene extends Phaser.Scene {
     this.pendingDir = 'NONE';
     this.fuelSpawnTimer?.remove();
     this.clearFuelBarrel();
+    sfx.gameOver();
 
     this.centerMessage = this.add.text(
       GAME_WIDTH / 2,

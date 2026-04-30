@@ -34,7 +34,7 @@ Veja `COMO_RODAR.md` pra detalhes.
 - [x] G3 - Camera + carregamento de fases
 - [x] G4 - Game loop completo (combustivel, penalty, galao, game over)
 - [x] G5 - Mobile (D-pad touch, modo olhos cansados)
-- [ ] G6 - Audio
+- [x] G6 - Audio (SFX sintetizado via Web Audio; OGG real fica pra G6.5 com FamiStudio)
 - [ ] G7 - Backend ranking (FastAPI Railway)
 - [ ] G7.5 - WebView no app Terra Gentil
 - [ ] G8 - Frontend ranking

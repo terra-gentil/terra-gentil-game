@@ -1,11 +1,13 @@
 export interface Settings {
   eyeStrainMode: boolean;
+  soundEnabled: boolean;
 }
 
 const STORAGE_KEY = 'gentileza:settings';
 
 const DEFAULT_SETTINGS: Settings = {
   eyeStrainMode: false,
+  soundEnabled: true,
 };
 
 export function getSettings(): Settings {
@@ -30,6 +32,13 @@ export function saveSettings(s: Settings): void {
 export function toggleEyeStrainMode(): Settings {
   const current = getSettings();
   const updated = { ...current, eyeStrainMode: !current.eyeStrainMode };
+  saveSettings(updated);
+  return updated;
+}
+
+export function toggleSound(): Settings {
+  const current = getSettings();
+  const updated = { ...current, soundEnabled: !current.soundEnabled };
   saveSettings(updated);
   return updated;
 }

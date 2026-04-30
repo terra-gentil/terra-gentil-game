@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
-import { getSettings, toggleEyeStrainMode } from '../config/Settings';
+import { getSettings, toggleEyeStrainMode, toggleSound } from '../config/Settings';
+import { sfx } from '../audio/SfxPlayer';
 
 export class TitleScene extends Phaser.Scene {
   private eyeStrainButton!: Phaser.GameObjects.Text;
+  private soundButton!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'TitleScene' });
@@ -11,6 +13,9 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#1B5E20');
+
+    // Sincroniza muted do sfx player com o setting persistido
+    sfx.setMuted(!getSettings().soundEnabled);
 
     const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 5, 'GENTILEZA', {
       fontFamily: 'Arial Black',
@@ -30,7 +35,7 @@ export class TitleScene extends Phaser.Scene {
     });
     subtitle.setOrigin(0.5);
 
-    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'JOGAR DESDE A FASE 1', {
+    const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10, 'JOGAR DESDE A FASE 1', {
       fontFamily: 'Arial',
       fontSize: '40px',
       color: '#FFFFFF',
@@ -52,13 +57,13 @@ export class TitleScene extends Phaser.Scene {
       this.scene.start('GameScene', { levelIndex: 0 });
     });
 
-    // Toggle de modo olhos cansados (acessibilidade pro publico 40-70)
-    this.eyeStrainButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, '', {
+    // Toggle de modo olhos cansados
+    this.eyeStrainButton = this.add.text(GAME_WIDTH / 2 - 200, GAME_HEIGHT / 2 + 110, '', {
       fontFamily: 'Arial Black',
-      fontSize: '28px',
+      fontSize: '24px',
       color: '#FFFFFF',
-      backgroundColor: '#2E7D32',
-      padding: { x: 24, y: 14 },
+      backgroundColor: '#37474F',
+      padding: { x: 20, y: 12 },
     });
     this.eyeStrainButton.setOrigin(0.5);
     this.eyeStrainButton.setInteractive({ useHandCursor: true });
@@ -67,6 +72,25 @@ export class TitleScene extends Phaser.Scene {
       this.refreshEyeStrainLabel(updated.eyeStrainMode);
     });
     this.refreshEyeStrainLabel(getSettings().eyeStrainMode);
+
+    // Toggle de som
+    this.soundButton = this.add.text(GAME_WIDTH / 2 + 200, GAME_HEIGHT / 2 + 110, '', {
+      fontFamily: 'Arial Black',
+      fontSize: '24px',
+      color: '#FFFFFF',
+      backgroundColor: '#37474F',
+      padding: { x: 20, y: 12 },
+    });
+    this.soundButton.setOrigin(0.5);
+    this.soundButton.setInteractive({ useHandCursor: true });
+    this.soundButton.on('pointerdown', () => {
+      const updated = toggleSound();
+      sfx.setMuted(!updated.soundEnabled);
+      this.refreshSoundLabel(updated.soundEnabled);
+      // Feedback imediato: tom curto se ligando, silencio se desligando
+      if (updated.soundEnabled) sfx.fuelPickup();
+    });
+    this.refreshSoundLabel(getSettings().soundEnabled);
 
     // Selector de fase pra teste rapido (1-10)
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 200, 'OU PULE PRA UMA FASE:', {
@@ -103,7 +127,12 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private refreshEyeStrainLabel(active: boolean): void {
-    this.eyeStrainButton.setText(`MODO OLHOS CANSADOS: ${active ? 'LIGADO' : 'DESLIGADO'}`);
+    this.eyeStrainButton.setText(`OLHOS CANSADOS: ${active ? 'LIGADO' : 'DESLIGADO'}`);
     this.eyeStrainButton.setBackgroundColor(active ? '#558B2F' : '#37474F');
+  }
+
+  private refreshSoundLabel(active: boolean): void {
+    this.soundButton.setText(`SOM: ${active ? 'LIGADO' : 'DESLIGADO'}`);
+    this.soundButton.setBackgroundColor(active ? '#558B2F' : '#37474F');
   }
 }

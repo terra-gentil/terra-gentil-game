@@ -8,10 +8,10 @@ on:
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
+# Permissions minimas no top-level (build job nao precisa pages/id-token).
+# Permissoes de pages/id-token sao concedidas apenas ao job de deploy.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 env:
   # Em junho/2026 o GitHub forca Node 24 nas actions. Opta antes pra evitar warning.
@@ -52,6 +52,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

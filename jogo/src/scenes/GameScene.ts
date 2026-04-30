@@ -70,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private fuelBarrel?: FuelBarrel;
   private fuelSpawnTimer?: Phaser.Time.TimerEvent;
   private gameOver = false;
+  private advancing = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -88,6 +89,7 @@ export class GameScene extends Phaser.Scene {
     this.fuelBarrel = undefined;
     this.fuelSpawnTimer = undefined;
     this.gameOver = false;
+    this.advancing = false;
   }
 
   create(): void {
@@ -152,11 +154,13 @@ export class GameScene extends Phaser.Scene {
     this.player.setStrokeStyle(4, COLORS.MOWER_ORANGE);
     this.player.setDepth(10);
 
-    this.cameras.main.startFollow(this.player, false, 0.1, 0, -GAME_WIDTH / 2 + this.player.x, 0);
+    // Sem offsetX: camera centra no player; bounds clampam quando level e menor que viewport
+    this.cameras.main.startFollow(this.player, false, 0.1, 0);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
 
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    const onPointerDown = (pointer: Phaser.Input.Pointer) => {
+      if (this.advancing) return;
       if (this.levelCleared) {
         this.advanceLevel();
         return;
@@ -172,17 +176,33 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.requestDir(dy > 0 ? 'DOWN' : 'UP');
       }
-    });
+    };
+    this.input.on('pointerdown', onPointerDown);
 
-    this.input.keyboard!.on('keydown-SPACE', () => {
+    const onConfirm = () => {
+      if (this.advancing) return;
       if (this.levelCleared) this.advanceLevel();
       else if (this.gameOver) this.restartLevel();
+    };
+    const onEscape = () => {
+      if (this.advancing) return;
+      this.advancing = true;
+      this.scene.start('TitleScene');
+    };
+    const kb = this.input.keyboard!;
+    kb.on('keydown-SPACE', onConfirm);
+    kb.on('keydown-ENTER', onConfirm);
+    kb.on('keydown-ESC', onEscape);
+
+    // Cleanup explicito ao trocar de cena (Phaser limpa input plugin, mas
+    // garantimos que nao acumule listeners caso o ciclo de vida da scene mude).
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off('pointerdown', onPointerDown);
+      kb.off('keydown-SPACE', onConfirm);
+      kb.off('keydown-ENTER', onConfirm);
+      kb.off('keydown-ESC', onEscape);
+      this.fuelSpawnTimer?.remove();
     });
-    this.input.keyboard!.on('keydown-ENTER', () => {
-      if (this.levelCleared) this.advanceLevel();
-      else if (this.gameOver) this.restartLevel();
-    });
-    this.input.keyboard!.on('keydown-ESC', () => this.scene.start('TitleScene'));
 
     this.buildHud();
     this.updateHud();
@@ -271,12 +291,15 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.levelCleared || this.gameOver) return;
-    const dt = delta / 1000;
+    // Cap dt em 50ms pra proteger snap-to-grid de lag spikes
+    // (delta > tile cruzaria 2 tiles num frame e bagunçaria a deteccao)
+    const cappedDelta = Math.min(delta, 50);
+    const dt = cappedDelta / 1000;
     this.readInput();
 
     // Decremento de combustivel: so quando se movendo (mesmo modelo do original)
     if (this.dir !== 'NONE') {
-      this.fuelDecAccumMs += delta;
+      this.fuelDecAccumMs += cappedDelta;
       while (this.fuelDecAccumMs >= FUEL_DECAY_INTERVAL_MS) {
         this.fuelDecAccumMs -= FUEL_DECAY_INTERVAL_MS;
         this.fuel = Math.max(0, this.fuel - 1);
@@ -390,7 +413,7 @@ export class GameScene extends Phaser.Scene {
 
   private updateHud(): void {
     const target = this.level.grama_alta_para_cortar;
-    const pct = Math.round((this.cutCount / target) * 100);
+    const pct = Math.min(100, Math.round((this.cutCount / target) * 100));
     this.hudText.setText(
       `FASE ${this.level.id}/10  CORTADO ${this.cutCount}/${target} (${pct}%)`
     );
@@ -527,6 +550,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private advanceLevel(): void {
+    if (this.advancing) return;
+    this.advancing = true;
     if (this.levelIndex >= this.allLevels.length - 1) {
       this.scene.start('TitleScene');
     } else {
@@ -535,6 +560,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private restartLevel(): void {
+    if (this.advancing) return;
+    this.advancing = true;
     this.scene.restart({ levelIndex: this.levelIndex });
   }
 }

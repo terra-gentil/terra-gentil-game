@@ -29,10 +29,10 @@ Veja `COMO_RODAR.md` pra detalhes.
 ## Status
 
 - [x] G0 - Engenharia reversa + scaffolding
-- [ ] G1 - Setup repo GitHub + GitHub Pages
-- [ ] G2 - Engine core (movimento, grid, corte)
-- [ ] G3 - Camera + carregamento de fases
-- [ ] G4 - Game loop completo
+- [x] G1 - Setup repo GitHub + GitHub Pages
+- [x] G2 - Engine core (movimento, grid, corte)
+- [x] G3 - Camera + carregamento de fases
+- [x] G4 - Game loop completo (combustivel, penalty, galao, game over)
 - [ ] G5 - Mobile (D-pad touch, modo olhos cansados)
 - [ ] G6 - Audio
 - [ ] G7 - Backend ranking (FastAPI Railway)
@@ -40,6 +40,11 @@ Veja `COMO_RODAR.md` pra detalhes.
 - [ ] G8 - Frontend ranking
 - [ ] G9 - Visual final (sprite Gentileza, tilemap)
 - [ ] G10 - Lancamento
+
+## QA
+
+Cada sprint roda revisao de QA por sub-agentes. Relatorios em `qa/g{N}/pass-XX/`.
+Veja `qa/README.md`.
 
 ## Marca
 

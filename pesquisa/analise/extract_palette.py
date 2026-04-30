@@ -30,14 +30,19 @@ NAMED_PALETTES = ['palTitle', 'palGameSprites', 'palGame', 'palDone']
 
 
 def parse_named_palette(content, label):
-    """Pega o bloco de bytes logo apos o label."""
-    pattern = rf'^{re.escape(label)}\s*\n\s*\.byte\s+([\$\w\s,]+)'
+    """Pega o bloco de bytes logo apos o label.
+
+    Limita o regex a uma unica linha de dados (`[^\n]+`) pra evitar
+    que o token final capture newlines + label seguinte e seja descartado
+    silenciosamente por ValueError. Bug encontrado pelo QA G0 pass-01.
+    """
+    pattern = rf'^{re.escape(label)}\s*\n\s*\.byte\s+([^\n]+)'
     m = re.search(pattern, content, re.MULTILINE)
     if not m:
         return []
     bytes_out = []
     for token in m.group(1).split(','):
-        token = token.strip()
+        token = token.strip().split(';')[0].strip()  # remove comentario inline se houver
         if token.startswith('$'):
             try:
                 bytes_out.append(int(token[1:], 16))

@@ -80,7 +80,7 @@ Por fase (95 bytes total):
   +1 byte  : player_x = (params[i] >> 8 & 0xFF) + 1   (offset por borda)
   +1 byte  : player_y = (params[i] >> 16 & 0xFF) + 3  (offset por bordas top)
   +2 bytes : tcnt LE   (qtd de tiles tipo 1 = grama alta a cortar)
-  +2 bytes : inc LE    (incremento de % por corte = round(100*256/tcnt))
+  +2 bytes : inc LE    (incremento de % por corte = int(100*256/tcnt) truncado, igual ao C++ original)
 ```
 
 10 fases * 95 bytes = 950 bytes a partir de patterns.chr offset 4096.

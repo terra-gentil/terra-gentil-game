@@ -10,7 +10,7 @@
     "game_y": 8
   },
   "grama_alta_para_cortar": 96,
-  "fuel_inc_por_tile_8_8": 267,
+  "fuel_inc_por_tile_8_8": 266,
   "tiles_legenda": {
     "0": "grama_cortada",
     "1": "grama_alta",

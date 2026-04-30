@@ -66,7 +66,10 @@ def parse_levels_bin(path):
                 'game_y': plr_y_raw + 3,
             },
             'grama_alta_para_cortar': cut_target,
-            'fuel_inc_por_tile_8_8': round(100 * 256 / cut_target) if cut_target else 0,
+            # int() trunca como o C++ original `(int)(100.0f*256.0f/tcnt)` em Unit1.cpp:471.
+            # round() (usado anteriormente) resultava em diferenca de +1 em 6 das 10 fases.
+            # Bug encontrado pelo QA G0 pass-01.
+            'fuel_inc_por_tile_8_8': int(100 * 256 / cut_target) if cut_target else 0,
             'tiles_legenda': TILE_LABEL,
             'tiles': playable,
         })

@@ -64,7 +64,7 @@ Cada nivel tambem tem 1 cor de paleta variante (`palList`):
 
 ```
 01 cyan   02 magenta  03 orange  04 green   05 cherry
-06 brown  07 green2   08 red     09 cyan2   10 green3
+06 light brown  07 green2   08 red     09 cyan2   10 green3
 ```
 
 ### 4.3 Loop principal
@@ -149,9 +149,9 @@ PNG extraidos:
 ## 8. Paletas
 
 4 paletas nomeadas em `palette.asm`:
-- `palTitle`: tela de titulo (3 sub-paletas BG)
-- `palGameSprites`: sprites no gameplay (3 sub-paletas SPR)
-- `palGame`: backgrounds no gameplay (3 sub-paletas BG)
+- `palTitle`: tela de titulo (4 sub-paletas BG)
+- `palGameSprites`: sprites no gameplay (4 sub-paletas SPR)
+- `palGame`: backgrounds no gameplay (4 sub-paletas BG)
 - `palDone`: tela final (4 sub-paletas BG)
 
 Cada sub-paleta tem 4 cores indexadas na NES master palette (64 cores).

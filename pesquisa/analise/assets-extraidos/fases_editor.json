@@ -11,7 +11,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 96,
-    "fuel_inc_por_tile_8_8": 267,
+    "fuel_inc_por_tile_8_8": 266,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -213,7 +213,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 116,
-    "fuel_inc_por_tile_8_8": 221,
+    "fuel_inc_por_tile_8_8": 220,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -415,7 +415,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 122,
-    "fuel_inc_por_tile_8_8": 210,
+    "fuel_inc_por_tile_8_8": 209,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -617,7 +617,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 183,
-    "fuel_inc_por_tile_8_8": 140,
+    "fuel_inc_por_tile_8_8": 139,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -885,7 +885,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 173,
-    "fuel_inc_por_tile_8_8": 148,
+    "fuel_inc_por_tile_8_8": 147,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -1153,7 +1153,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 247,
-    "fuel_inc_por_tile_8_8": 104,
+    "fuel_inc_por_tile_8_8": 103,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -1476,7 +1476,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 190,
-    "fuel_inc_por_tile_8_8": 135,
+    "fuel_inc_por_tile_8_8": 134,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -1799,7 +1799,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 221,
-    "fuel_inc_por_tile_8_8": 116,
+    "fuel_inc_por_tile_8_8": 115,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",
@@ -2122,7 +2122,7 @@
       "game_y": 8
     },
     "grama_alta_para_cortar": 247,
-    "fuel_inc_por_tile_8_8": 104,
+    "fuel_inc_por_tile_8_8": 103,
     "tiles_legenda": {
       "0": "grama_cortada",
       "1": "grama_alta",

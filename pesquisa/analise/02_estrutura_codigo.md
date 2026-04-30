@@ -163,7 +163,7 @@ DIR_DOWN  = 4
 | $0e-$11 | Grama alta (4 variantes - PRINCIPAL)           |
 | $12     | Flores (intactas)                              |
 | $13     | Flores cortadas                                |
-| $14-$15 | Pedra (2 variantes)                            |
+| $14     | Pedra (tile unico, 4 frames de animacao CHR)   |
 | $16-$2d | Tiles do HUD/textos (LEVEL, FUEL, !, etc)      |
 | $2e-$2f | Galao de combustivel (animado)                 |
 

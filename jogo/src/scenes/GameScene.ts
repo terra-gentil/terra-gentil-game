@@ -492,11 +492,17 @@ export class GameScene extends Phaser.Scene {
       this.applyFuelPenalty(PENALTY_FLOWERS);
       this.level.tiles[ty][tx] = TILE.CUT;
       this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
-      sfx.penaltyFlowers();
+      // Se o penalty disparou game over, skip SFX pra nao sobrepor com gameOver()
+      if (!this.gameOver) {
+        sfx.penaltyFlowers();
+      }
     } else if (type === TILE.STONE) {
       this.applyFuelPenalty(PENALTY_STONE);
-      this.cameras.main.shake(250, 0.008);
-      sfx.penaltyStone();
+      // Se o penalty disparou game over, skip shake+SFX pra nao sobrepor
+      if (!this.gameOver) {
+        this.cameras.main.shake(250, 0.008);
+        sfx.penaltyStone();
+      }
     }
   }
 

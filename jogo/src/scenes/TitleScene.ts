@@ -54,6 +54,9 @@ export class TitleScene extends Phaser.Scene {
     });
 
     startButton.on('pointerdown', () => {
+      // prime() garante que AudioContext seja criado dentro deste user gesture
+      // pra que o primeiro SFX no GameScene nao seja silenciado em mobile Safari
+      sfx.prime();
       this.scene.start('GameScene', { levelIndex: 0 });
     });
 
@@ -113,6 +116,7 @@ export class TitleScene extends Phaser.Scene {
       btn.on('pointerover', () => btn.setBackgroundColor('#2E7D32'));
       btn.on('pointerout', () => btn.setBackgroundColor('#1B5E20'));
       btn.on('pointerdown', () => {
+        sfx.prime();
         this.scene.start('GameScene', { levelIndex: i });
       });
     }

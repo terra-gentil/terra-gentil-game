@@ -23,6 +23,16 @@ export class SfxPlayer {
     return this.muted;
   }
 
+  /**
+   * Inicializa o AudioContext dentro de um handler de user gesture.
+   * Chamado no botao JOGAR (Title) pra warm-up: sem isso, em mobile
+   * Safari o primeiro SFX (sfx.cut() de 50ms) pode rodar com context
+   * ainda em estado suspended e ser silenciado.
+   */
+  prime(): void {
+    this.ensureContext();
+  }
+
   private ensureContext(): AudioContext | undefined {
     if (this.ctx) {
       if (this.ctx.state === 'suspended') {
@@ -74,6 +84,17 @@ export class SfxPlayer {
     osc.connect(gain).connect(ctx.destination);
     osc.start(start);
     osc.stop(start + dur);
+
+    // Disconnect explicito quando o oscilador termina pra evitar acumulo
+    // de AudioNodes em sessoes longas (Safari iOS 13 pode nao GC sozinho).
+    osc.addEventListener('ended', () => {
+      try {
+        osc.disconnect();
+        gain.disconnect();
+      } catch {
+        // ja desconectado, ignora
+      }
+    });
   }
 
   // ----- Eventos do jogo -----

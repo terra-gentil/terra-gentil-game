@@ -13,6 +13,7 @@ jogo/dist/
 .vscode/
 .idea/
 *.suo
+.claude/
 
 # OS
 .DS_Store

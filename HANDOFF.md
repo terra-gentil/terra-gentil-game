@@ -3,11 +3,12 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30
-**HEAD atual**: `9d87925` (apos G7 backend)
-**Sprints concluidas**: G0..G7 (G7 sem QA ainda)
+**Ultima atualizacao**: 2026-04-30 (G7 backend em prod)
+**HEAD atual**: `bc810e6` (sera atualizado neste commit)
+**Sprints concluidas**: G0..G7 (G7 com deploy validado, sem QA ainda)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
-**Deploy**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
+**Deploy frontend**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
+**Deploy backend**: https://terra-gentil-game-production.up.railway.app (Railway, deploy automatico no push pra main quando `backend/**` muda)
 **Local**: `C:\Gitlab_hz\terra-gentil-game\`
 
 ---
@@ -50,7 +51,7 @@ reversa documentada em `pesquisa/analise/`.
 - **Vite** 8.0.10 (vite.config.ts com base path condicional: `'/terra-gentil-game/'` em build, `'./'` em dev)
 - **Node.js** v18+ (CI usa Node 20, com `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` env pra opt-in)
 - **Deploy**: GitHub Actions -> GitHub Pages (artifact + deploy-pages action oficial)
-- **Backend ranking** (futuro G7): FastAPI no Railway, ainda nao implementado
+- **Backend ranking** (G7): FastAPI 0.115 + Pydantic 2.9 + slowapi 0.1.9 + SQLite stdlib, Python 3.12-slim no Docker, em prod no Railway com volume persistente em `/data`
 
 ---
 
@@ -133,7 +134,7 @@ terra-gentil-game/
 - [x] **G5** — Mobile (D-pad virtual + modo olhos cansados com persistencia)
 - [x] **G6** — Audio (SFX sintetizado via Web Audio API + toggle de som)
 - [ ] **G6.5** — (futuro) Substituir SFX sintetizado por OGG real exportado das musicas/efeitos originais via FamiStudio
-- [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway pendente, sem QA ainda)
+- [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway validado em prod, sem QA ainda)
 - [ ] **G7.5** — WebView no app Terra Gentil
 - [ ] **G8** — Frontend ranking
 - [ ] **G9** — Visual final (sprite Gentileza pelo design, tilemap real)
@@ -312,8 +313,8 @@ Acima do D-pad pra nao ser obstruidas em level clear / game over.
 4. Dropar arquivos em `jogo/public/assets/audio/{nome}.ogg`
 5. Avisar Claude pra trocar `sfx.*()` por `this.sound.play(key)`
 
-### Bloqueantes pra deploy do G7 (backend ja codado em backend/)
-Decisoes ja tomadas (defaults aceitos pelo usuario em 2026-04-30):
+### G7 deploy (CONCLUIDO 2026-04-30)
+Decisoes ja tomadas:
 - Schema: `nickname` [A-Z0-9_]{3,12}, `level_reached` 1-10, `total_pct` 0-100, `time_seconds` 1-36000. Zero PII.
 - Top-N: 50 (configuravel via query param ate 100)
 - Retencao: forever inicial
@@ -321,14 +322,21 @@ Decisoes ja tomadas (defaults aceitos pelo usuario em 2026-04-30):
 - Rate limit: 5/min POST, 60/min GET
 - Anti-abuse: tempo minimo 3s/level + pct 100 so com level 10
 
-Acoes manuais pendentes do usuario:
-1. Criar projeto Railway novo (recomendado, nao reusar projeto existente)
-2. Conectar repo `terra-gentil/terra-gentil-game`, definir Root Directory = `backend`
-3. Criar volume montado em `/data` (1 GB)
-4. Configurar env vars: `DB_PATH=/data/scores.db`, `CORS_ORIGINS=https://terra-gentil.github.io,http://localhost:5173`
-5. Smoke test pos-deploy: curl `/health`, POST scores, GET top
-6. Rodar QA round 4 quando o usuario julgar (politica nova: on-demand)
-7. Anotar URL publica do service pra G8 (frontend ranking)
+Setup feito no Railway (projeto `powerful-mercy`):
+- Servico `terra-gentil-game` apontando pra `terra-gentil/terra-gentil-game` repo, branch `main`
+- Root Directory = `/backend`, Dockerfile path = `/backend/Dockerfile`
+- Volume `terra-gentil-game-volume` montado em `/data`, 500 MB
+- Env vars: `DB_PATH=/data/scores.db`, `CORS_ORIGINS=https://terra-gentil.github.io,http://localhost:5173`
+- Auto-deploy ativo no push pra `main`
+- URL publica: `https://terra-gentil-game-production.up.railway.app`
+
+Smoke test validado em 2026-04-30:
+- `GET /health` -> 200
+- `POST /scores` -> 201 com id sequencial
+- `GET /scores/top` -> 200 com ordering correto
+- Persistencia confirmada via Restart no painel Railway (scores sobrevivem)
+
+Banco prod tem 2 scores de teste residuais (DIAG, PERSIST) que vao ser empurrados pra baixo do ranking conforme jogadores reais postarem. Decisao: deixar la (baixo dano).
 
 ### Pendentes pra G9 (visual final)
 1. Sprite real do mascote Gentileza (atualmente e retangulo amarelo com borda laranja)
@@ -509,16 +517,17 @@ continuar cobrindo TODAS as sprints existentes.
 
 ## Proximas decisoes pendentes (G8)
 
-G7 backend ja codado e commitado em `backend/`. Para iniciar G8 (frontend ranking),
-preciso de input:
+Backend G7 em prod, URL `https://terra-gentil-game-production.up.railway.app`.
+Para iniciar G8 (frontend ranking), preciso de input:
 
-1. URL publica do backend Railway (sai apos deploy manual do usuario)
-2. Tela de submit de score: aparece automatica em level clear (fase 10) ou
+1. Tela de submit de score: aparece automatica em level clear (fase 10) ou
    tem opcao "submeter ranking" no menu? Default sugerido: aparece em "you win"
-3. Validacao client-side do nickname antes de submeter (mesmo regex do backend)
-4. Tela de top: substitui o selector 1-10 ou e nova scene? Default: nova scene
+2. Validacao client-side do nickname antes de submeter (mesmo regex `[A-Z0-9_]{3,12}` do backend)
+3. Tela de top: substitui o selector 1-10 ou e nova scene? Default: nova scene
    acessada via botao no Title
-5. Cache local: lembrar nickname do ultimo submit (localStorage `gentileza:nickname`)?
+4. Cache local: lembrar nickname do ultimo submit (localStorage `gentileza:nickname`)?
+5. URL do backend: hardcoded em `GameConfig.ts` ou via env var Vite (`VITE_RANKING_API_URL`)?
+   Default sugerido: env var, com fallback hardcoded pro endereco prod
 
 Conheco os contratos do backend G7 (formato JSON, codigos HTTP, ordering)
 entao a integracao em si nao tem ambiguidade. So preciso UX confirmada.

@@ -1,3 +1,4 @@
+import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
@@ -37,6 +38,22 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[])
 app = FastAPI(title="Terra Gentil ranking API", version=VERSION, lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Log de requests sem IP do cliente (P2-G7-05, LGPD/GDPR friendly).
+# uvicorn roda com --no-access-log no Dockerfile pra suprimir o log default
+# que inclui IP+porta. Aqui logamos apenas method, path e status.
+_request_logger = logging.getLogger("terra_gentil.request")
+_request_logger.setLevel(logging.INFO)
+
+
+@app.middleware("http")
+async def log_request_no_ip(request: Request, call_next):
+    response = await call_next(request)
+    _request_logger.info(
+        "%s %s -> %s", request.method, request.url.path, response.status_code
+    )
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,

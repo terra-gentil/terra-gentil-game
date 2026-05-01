@@ -53,8 +53,15 @@ export function showSubmitModal(allLevels: AllLevelsJson, cb: SubmitModalCallbac
   if (cached) input.value = cached;
 
   const refreshValid = () => {
+    // Preserva posicao do cursor (P2-G8-04): atribuir input.value reposiciona
+    // o cursor pro fim em Chrome/desktop, quebrando edicao no meio da string.
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
     const v = input.value.trim().toUpperCase();
-    if (v !== input.value) input.value = v;
+    if (v !== input.value) {
+      input.value = v;
+      if (start !== null && end !== null) input.setSelectionRange(start, end);
+    }
     const valid = NICKNAME_REGEX.test(v);
     sendBtn.disabled = !valid;
   };
@@ -67,6 +74,10 @@ export function showSubmitModal(allLevels: AllLevelsJson, cb: SubmitModalCallbac
     if (e.key === 'Enter' && !sendBtn.disabled) {
       e.preventDefault();
       sendBtn.click();
+    } else if (e.key === 'Escape') {
+      // ESC fecha como PULAR (P2-G8-01). Convencao web em modais.
+      e.preventDefault();
+      skipBtn.click();
     }
   });
 

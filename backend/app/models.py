@@ -1,5 +1,5 @@
-from datetime import datetime
-from pydantic import BaseModel, Field
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, field_validator
 
 
 class ScoreCreate(BaseModel):
@@ -16,6 +16,19 @@ class ScoreOut(BaseModel):
     total_pct: int
     time_seconds: int
     created_at: datetime
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        # SQLite CURRENT_TIMESTAMP retorna 'YYYY-MM-DD HH:MM:SS' UTC mas naive
+        # (P2-G7-07). Forcamos tzinfo=utc pra que o JSON serializado leve sufixo
+        # 'Z' / '+00:00' e clientes em outros timezones nao interpretem como
+        # horario local.
+        if isinstance(v, str):
+            v = datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+        if isinstance(v, datetime) and v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v
 
 
 class TopResponse(BaseModel):

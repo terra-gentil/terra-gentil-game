@@ -24,7 +24,7 @@ Veja `COMO_RODAR.md` pra detalhes.
 
 - Phaser 3.90 + TypeScript + Vite
 - Deploy frontend: GitHub Pages
-- Backend ranking (futuro): FastAPI no Railway
+- Deploy backend: Railway (FastAPI + SQLite, https://terra-gentil-game-production.up.railway.app)
 
 ## Status
 
@@ -35,9 +35,9 @@ Veja `COMO_RODAR.md` pra detalhes.
 - [x] G4 - Game loop completo (combustivel, penalty, galao, game over)
 - [x] G5 - Mobile (D-pad touch, modo olhos cansados)
 - [x] G6 - Audio (SFX sintetizado via Web Audio; OGG real fica pra G6.5 com FamiStudio)
-- [ ] G7 - Backend ranking (FastAPI Railway)
-- [ ] G7.5 - WebView no app Terra Gentil
-- [ ] G8 - Frontend ranking
+- [x] G7 - Backend ranking (FastAPI Railway)
+- [x] G7.5 - WebView no app Terra Gentil + nickname via URL param
+- [x] G8 - Frontend ranking (submit modal + tela top 13 + cache nickname)
 - [ ] G9 - Visual final (sprite Gentileza, tilemap)
 - [ ] G10 - Lancamento
 

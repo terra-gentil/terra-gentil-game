@@ -3,9 +3,9 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30 (G7.5 WebView no app + nickname via URL)
+**Ultima atualizacao**: 2026-04-30 (QA round-4 + qa-fixes round-4)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
-**Sprints concluidas**: G0..G8 + G7.5 (G7+G7.5+G8 sem QA ainda, mas validados via uso)
+**Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
 **Deploy frontend**: https://terra-gentil.github.io/terra-gentil-game/ (GitHub Pages, deploy automatico no push pra main)
 **Deploy backend**: https://terra-gentil-game-production.up.railway.app (Railway, deploy automatico no push pra main quando `backend/**` muda)
@@ -154,6 +154,10 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+ef0ac6a qa-fixes round-4: aplica 8 P1 do QA round-4
+c13b9fa qa: round-4 reports - G0..G8 (10 sub-agentes Sonnet)
+ad71970 G7.5: WebView no app + nickname via URL param
+6f3b89a handoff: atualiza git log e instrucao do HEAD
 67b06cd G8: frontend ranking - submit modal, tela de top 50 e cache de nickname
 a03405c G7: deploy Railway concluido + HANDOFF atualizado com URL prod
 bc810e6 handoff: atualiza pos-G7 e nova politica de QA on-demand
@@ -353,6 +357,10 @@ Acima do D-pad pra nao ser obstruidas em level clear / game over.
 8. **Toggle de Settings nao reflete em GameScene em curso** — UX aceitavel
 9. **D-pad sobrepoe colunas 0-2 em fases pequenas (1-3)** — alpha 0.55 deixa ver atraves
 10. **Volumes de SFX nao tem slider** — so on/off
+11. **time_seconds inclui retries de fase** (G8 P2-G8-02) — ranking conta tempo total da run, nao percurso bem-sucedido. Documenta penalidade pra mortes
+12. **conftest.py usa importlib.reload** (G7 P1-03) — factory pattern e o fix definitivo, deferred. Mitigado com tempfile + limiter reset + cleanup robusto
+13. **URL `?nickname=` sobrescreve cache local** (G7.5 P2-01) — comportamento documentado. WebView tem prioridade sobre nickname digitado. Cenario tablet compartilhado aceita esse trade-off
+14. **`RANKING_API_URL` hardcoded** (G8 P3-01) — pragmatico, sem env vars Vite
 
 ---
 
@@ -549,23 +557,28 @@ Pode forcar via Actions tab > Run workflow.
 
 | Sprint | Passes feitos | P1 abertos | Status |
 |--------|--------------|------------|--------|
-| G0 | 1, 2, 3 | 0 | Limpo |
-| G1 | 1, 2, 3 | 0 | Limpo |
-| G2 | 1, 2, 3 | 0 | Limpo |
-| G3 | 1, 2, 3 | 0 | Limpo |
-| G4 | 1, 2 | 0 | Limpo |
-| G5 | 1, 2 | 0 | Limpo |
-| G6 | 1 | 0 | Limpo |
-| G7 | nenhum | n/a | Aguardando QA (politica on-demand) |
-| G7.5 | nenhum | n/a | Aguardando QA (politica on-demand) |
-| G8 | nenhum | n/a | Aguardando QA (politica on-demand) |
+| G0 | 1, 2, 3, 4 | 0 | Limpo |
+| G1 | 1, 2, 3, 4 | 0 | Limpo |
+| G2 | 1, 2, 3, 4 | 0 | Limpo |
+| G3 | 1, 2, 3, 4 | 0 | Limpo |
+| G4 | 1, 2, 3 | 0 | Limpo |
+| G5 | 1, 2, 3 | 0 | Limpo |
+| G6 | 1, 2 | 0 | Limpo (P1-01/P1-02 fechados em qa-fixes round-3) |
+| G7 | 1 | 0 | 4 P1 fechados em qa-fixes round-4 (proxy headers, USER, fixture, test_cors) |
+| G7.5 | 1 | 0 | Limpo (so P2 documentais) |
+| G8 | 1 | 0 | 4 P1 fechados em qa-fixes round-4 (cuts reset, alive flag, TOP 13, timeout) |
 
-Todos os P1/P2 das 3 rodadas de QA foram aplicados.
+Todos os P1 dos 4 rounds de QA foram aplicados.
 
 **Politica de QA (atualizada 2026-04-30)**: rodar so quando o usuario pedir
 explicitamente. Sub-agentes em paralelo consomem muitos tokens; o usuario
 sinalizou que talvez agrupe revisoes de 4 em 4 sprints. Quando rodar,
 continuar cobrindo TODAS as sprints existentes.
+
+**Round-4 (2026-04-30)**: rodado em opcao C (1 sub-agente Sonnet por sprint,
+10 paralelos). Achou P0=0, P1=8, P2=23, P3=54. Todos os 8 P1 fechados em
+commit `ef0ac6a` (qa-fixes round-4). Os 20 relatorios estao em
+`qa/g{0..8,7.5}/pass-{NN}/{relatorio,handoff}.md`.
 
 ---
 

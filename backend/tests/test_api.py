@@ -151,4 +151,9 @@ class TestCORS:
                 "Access-Control-Request-Method": "GET",
             },
         )
+        # CORSMiddleware do Starlette retorna 400 pra preflight de origem nao
+        # permitida. Verificamos os 2 sinais (status + ausencia do header) pra
+        # nao depender so da ausencia, que pode dar falso positivo se o handler
+        # mudar de comportamento (QA G7 P1-04).
+        assert r.status_code == 400
         assert "access-control-allow-origin" not in r.headers

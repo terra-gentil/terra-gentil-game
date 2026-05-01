@@ -5,20 +5,26 @@ import type { ScoreOut } from '../types/Ranking';
 import { sfx } from '../audio/SfxPlayer';
 import { getSettings } from '../config/Settings';
 
+const VISIBLE_TOP_N = 13;
+
 export class RankingScene extends Phaser.Scene {
   private listContainer!: Phaser.GameObjects.Container;
   private statusText!: Phaser.GameObjects.Text;
   private retryBtn?: Phaser.GameObjects.Text;
+  private alive = false;
+  private loading = false;
 
   constructor() {
     super({ key: 'RankingScene' });
   }
 
   create(): void {
+    this.alive = true;
+    this.loading = false;
     this.cameras.main.setBackgroundColor('#0E3211');
     sfx.setMuted(!getSettings().soundEnabled);
 
-    this.add.text(GAME_WIDTH / 2, 60, 'RANKING - TOP 50', {
+    this.add.text(GAME_WIDTH / 2, 60, `RANKING - TOP ${VISIBLE_TOP_N}`, {
       fontFamily: 'Arial Black',
       fontSize: '56px',
       color: '#F5C97E',
@@ -43,6 +49,7 @@ export class RankingScene extends Phaser.Scene {
     const onEsc = () => this.scene.start('TitleScene');
     kb.on('keydown-ESC', onEsc);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.alive = false;
       kb.off('keydown-ESC', onEsc);
     });
 
@@ -57,6 +64,8 @@ export class RankingScene extends Phaser.Scene {
   }
 
   private async loadAndRender(): Promise<void> {
+    if (this.loading || !this.alive) return;
+    this.loading = true;
     this.statusText.setText('CARREGANDO...');
     this.statusText.setVisible(true);
     this.retryBtn?.destroy();
@@ -64,7 +73,8 @@ export class RankingScene extends Phaser.Scene {
     this.listContainer.removeAll(true);
 
     try {
-      const data = await getTopScores(50);
+      const data = await getTopScores(VISIBLE_TOP_N);
+      if (!this.alive) return;
       this.statusText.setVisible(false);
       if (data.scores.length === 0) {
         this.statusText.setText('NENHUM SCORE AINDA.\nSEJA O PRIMEIRO!');
@@ -73,6 +83,7 @@ export class RankingScene extends Phaser.Scene {
       }
       this.renderList(data.scores);
     } catch (e) {
+      if (!this.alive) return;
       const msg = e instanceof RankingApiError ? e.message : 'Erro ao carregar';
       this.statusText.setText(msg);
       this.statusText.setColor('#FF7043');
@@ -88,6 +99,8 @@ export class RankingScene extends Phaser.Scene {
         this.statusText.setColor('#FFFFFF');
         void this.loadAndRender();
       });
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -119,8 +132,7 @@ export class RankingScene extends Phaser.Scene {
       color: '#F5C97E',
     };
 
-    const visibleRows = Math.min(scores.length, 13);
-    for (let i = 0; i < visibleRows; i++) {
+    for (let i = 0; i < scores.length; i++) {
       const s = scores[i];
       const y = startY + 40 + i * rowH;
       const style = i < 3 ? topStyle : cellStyle;
@@ -136,17 +148,6 @@ export class RankingScene extends Phaser.Scene {
           this.add.text(colX[idx], y, c, style).setOrigin(0, 0.5)
         );
       });
-    }
-
-    if (scores.length > visibleRows) {
-      this.listContainer.add(
-        this.add.text(
-          GAME_WIDTH / 2,
-          startY + 40 + visibleRows * rowH + 20,
-          `+ ${scores.length - visibleRows} mais...`,
-          { fontFamily: 'Arial', fontSize: '18px', color: '#AAAAAA' }
-        ).setOrigin(0.5)
-      );
     }
   }
 }

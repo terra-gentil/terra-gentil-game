@@ -36,6 +36,10 @@ export function startRun(opts: { practiceMode: boolean; startLevelIndex: number 
 
 export function enterLevel(levelIndex: number): void {
   if (!current.active) return;
+  if (levelIndex < 0 || levelIndex >= LEVELS_TOTAL) return;
+  // Reseta cuts da fase em cada entrada. Sem isso, retries acumulam e permitem
+  // inflar total_pct ate 99 sem progredir alem da fase atual (exploit de ranking).
+  current.cutsByLevel[levelIndex] = 0;
   const reached = levelIndex + 1;
   if (reached > current.highestLevel) current.highestLevel = reached;
 }

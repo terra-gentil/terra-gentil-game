@@ -1,19 +1,26 @@
 /**
- * SFX sintetizados via Web Audio API.
+ * SFX em modo dual:
+ *  - Default ('synth'): sintetizados via Web Audio API. Sem dependencia de assets.
+ *  - 'ogg': carregados pelo Phaser sound (this.scene.sound.play(key)). Ativa quando
+ *    USE_OGG_SFX=true em Constants.ts e os 6 OGG existem em public/assets/audio/.
  *
- * Implementacao temporaria pra G6 sem dependencia de assets.
- * Quando os .ftm originais forem exportados em OGG via FamiStudio,
- * trocar pra usar Phaser sound (this.sound.play(key)) no GameScene.
+ * Interface publica (cut/penaltyFlowers/.../gameOver) inalterada — facade.
  *
- * AudioContext e criado lazy na primeira chamada de play() pra respeitar
+ * AudioContext (modo synth) e criado lazy na primeira chamada de play() pra respeitar
  * a politica de auto-play dos browsers (precisa de user gesture).
  */
 
+import Phaser from 'phaser';
+import { SFX_KEYS, USE_OGG_SFX } from '../config/Constants';
+
 type OscType = 'sine' | 'square' | 'triangle' | 'sawtooth';
+type SfxKey = keyof typeof SFX_KEYS;
 
 export class SfxPlayer {
   private ctx?: AudioContext;
   private muted = false;
+  private soundManager?: Phaser.Sound.BaseSoundManager;
+  private oggReady = false;
 
   setMuted(m: boolean): void {
     this.muted = m;
@@ -24,12 +31,32 @@ export class SfxPlayer {
   }
 
   /**
-   * Inicializa o AudioContext dentro de um handler de user gesture.
-   * Chamado no botao JOGAR (Title) pra warm-up: sem isso, em mobile
-   * Safari o primeiro SFX (sfx.cut() de 50ms) pode rodar com context
-   * ainda em estado suspended e ser silenciado.
+   * Aponta o SfxPlayer pra um Phaser.Sound.BaseSoundManager e checa se os 6 OGG
+   * estao no cache. Se sim e USE_OGG_SFX=true, switcha pra modo OGG.
+   * Caso contrario, fica no synth atual.
+   * Chamar em BootScene.create() apos preload (e idempotente).
+   */
+  attachScene(scene: Phaser.Scene): void {
+    if (this.soundManager) return;
+    if (!USE_OGG_SFX) return;
+    const allLoaded = (Object.values(SFX_KEYS) as string[]).every((k) =>
+      scene.cache.audio.exists(k),
+    );
+    if (!allLoaded) return;
+    this.soundManager = scene.sound;
+    this.oggReady = true;
+  }
+
+  /**
+   * Inicializa o AudioContext (synth) dentro de um handler de user gesture.
+   * Chamado no botao JOGAR (Title) pra warm-up: sem isso, em mobile Safari
+   * o primeiro SFX (sfx.cut() de 50ms) pode rodar com context ainda em
+   * estado suspended e ser silenciado.
+   *
+   * Em modo OGG, prime() e no-op (Phaser ja gerencia AudioContext internamente).
    */
   prime(): void {
+    if (this.oggReady) return;
     this.ensureContext();
   }
 
@@ -51,12 +78,7 @@ export class SfxPlayer {
   }
 
   /**
-   * Toca uma nota com envelope ataque-decay simples.
-   * @param freq frequencia em Hz
-   * @param durationMs duracao total
-   * @param type forma de onda
-   * @param volume 0..1
-   * @param delayMs atraso antes de iniciar
+   * Toca uma nota sintetizada com envelope ataque-decay simples.
    */
   private playTone(
     freq: number,
@@ -85,8 +107,6 @@ export class SfxPlayer {
     osc.start(start);
     osc.stop(start + dur);
 
-    // Disconnect explicito quando o oscilador termina pra evitar acumulo
-    // de AudioNodes em sessoes longas (Safari iOS 13 pode nao GC sozinho).
     osc.addEventListener('ended', () => {
       try {
         osc.disconnect();
@@ -97,41 +117,52 @@ export class SfxPlayer {
     });
   }
 
+  private playOgg(key: SfxKey, volume = 0.6): boolean {
+    if (this.muted) return true;
+    if (!this.oggReady || !this.soundManager) return false;
+    try {
+      this.soundManager.play(SFX_KEYS[key], { volume });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // ----- Eventos do jogo -----
 
-  /** Cortar grama: pulso curto e seco */
   cut(): void {
+    if (this.playOgg('cut', 0.5)) return;
     this.playTone(180, 50, 'square', 0.08);
   }
 
-  /** Pisar flor: 2 tons descendentes */
   penaltyFlowers(): void {
+    if (this.playOgg('penaltyFlowers', 0.6)) return;
     this.playTone(440, 80, 'triangle', 0.12);
     this.playTone(220, 100, 'triangle', 0.10, 80);
   }
 
-  /** Pisar pedra: thump grave */
   penaltyStone(): void {
+    if (this.playOgg('penaltyStone', 0.7)) return;
     this.playTone(90, 220, 'square', 0.20);
     this.playTone(60, 250, 'sawtooth', 0.10, 60);
   }
 
-  /** Pegar galao: arpejo ascendente C-E-G */
   fuelPickup(): void {
-    this.playTone(523, 80, 'sine', 0.18);   // C5
-    this.playTone(659, 80, 'sine', 0.18, 80);  // E5
-    this.playTone(784, 140, 'sine', 0.20, 160); // G5
+    if (this.playOgg('fuelPickup', 0.6)) return;
+    this.playTone(523, 80, 'sine', 0.18);
+    this.playTone(659, 80, 'sine', 0.18, 80);
+    this.playTone(784, 140, 'sine', 0.20, 160);
   }
 
-  /** Fase completa: 4 notas ascendentes alegres */
   levelClear(): void {
+    if (this.playOgg('levelClear', 0.7)) return;
     [440, 554, 659, 880].forEach((freq, i) => {
       this.playTone(freq, 180, 'square', 0.16, i * 110);
     });
   }
 
-  /** Game over: 3 notas descendentes tristes */
   gameOver(): void {
+    if (this.playOgg('gameOver', 0.6)) return;
     this.playTone(220, 220, 'square', 0.16);
     this.playTone(165, 280, 'square', 0.14, 220);
     this.playTone(110, 460, 'sawtooth', 0.12, 480);

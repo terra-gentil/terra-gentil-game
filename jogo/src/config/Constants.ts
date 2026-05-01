@@ -19,3 +19,28 @@ export const COLORS = {
 };
 
 export const RANKING_API_URL = 'https://terra-gentil-game-production.up.railway.app';
+
+// G6.5: quando os SFX OGG forem exportados via FamiStudio e dropados em
+// jogo/public/assets/audio/{cut,flowers,stone,fuel,clear,gameover}.ogg,
+// vire esta flag pra true. SfxPlayer passa a usar Phaser.Sound em vez do
+// synth via Web Audio. Default false: mantem synth atual sem dependencia
+// de assets.
+export const USE_OGG_SFX = false;
+
+export const SFX_KEYS = {
+  cut: 'sfx_cut',
+  penaltyFlowers: 'sfx_flowers',
+  penaltyStone: 'sfx_stone',
+  fuelPickup: 'sfx_fuel',
+  levelClear: 'sfx_clear',
+  gameOver: 'sfx_gameover',
+} as const;
+
+export const SFX_PATHS: Record<keyof typeof SFX_KEYS, string> = {
+  cut: 'assets/audio/cut.ogg',
+  penaltyFlowers: 'assets/audio/flowers.ogg',
+  penaltyStone: 'assets/audio/stone.ogg',
+  fuelPickup: 'assets/audio/fuel.ogg',
+  levelClear: 'assets/audio/clear.ogg',
+  gameOver: 'assets/audio/gameover.ogg',
+};

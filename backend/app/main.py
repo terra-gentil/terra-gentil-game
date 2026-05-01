@@ -27,9 +27,21 @@ ALLOWED_ORIGINS = [
 ]
 
 
+_lifespan_logger = logging.getLogger("terra_gentil.lifespan")
+_lifespan_logger.setLevel(logging.INFO)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    init_db()
+    # P2-G7-10: log explicito em init_db pra que falhas (volume nao montado,
+    # permissao negada, schema corrupto) apareçam no Railway antes do uvicorn
+    # tentar atender requests com banco quebrado.
+    try:
+        init_db()
+        _lifespan_logger.info("init_db OK")
+    except Exception as e:
+        _lifespan_logger.exception("init_db falhou: %s", e)
+        raise
     yield
 
 
@@ -38,6 +50,27 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[])
 app = FastAPI(title="Terra Gentil ranking API", version=VERSION, lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# P2-G7-02: handler global pra excecoes nao previstas. Sem isso, FastAPI retorna
+# 500 com body vazio (em prod) ou stack trace (em debug). Cliente recebe
+# RankingApiError('server') mas sem causa visivel nos logs.
+_unhandled_logger = logging.getLogger("terra_gentil.unhandled")
+_unhandled_logger.setLevel(logging.ERROR)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    from fastapi.responses import JSONResponse
+    _unhandled_logger.exception(
+        "unhandled %s em %s %s: %s",
+        type(exc).__name__, request.method, request.url.path, exc,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "internal server error"},
+    )
+
 
 # Log de requests sem IP do cliente (P2-G7-05, LGPD/GDPR friendly).
 # uvicorn roda com --no-access-log no Dockerfile pra suprimir o log default
@@ -78,7 +111,9 @@ def create_score(
 ):
     ok, reason = validate_plausible(payload)
     if not ok:
-        raise HTTPException(status_code=422, detail=reason)
+        # P2-G7-01: business rule -> 400. Reservamos 422 pra falhas de schema
+        # Pydantic (formato do payload), seguindo HTTP semantica.
+        raise HTTPException(status_code=400, detail=reason)
 
     cursor = db.execute(
         """

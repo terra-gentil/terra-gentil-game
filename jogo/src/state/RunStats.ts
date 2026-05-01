@@ -87,7 +87,10 @@ export function buildSubmitPayload(nickname: string, allLevels: AllLevelsJson): 
 export function loadCachedNickname(): string {
   try {
     return localStorage.getItem(NICKNAME_KEY) ?? '';
-  } catch {
+  } catch (e) {
+    // P2-G8-05: localStorage indisponivel (modo privado iOS, quota cheia, etc).
+    // Loga warn pra debug-friendliness; UX ainda fluida (input fica vazio).
+    console.warn('loadCachedNickname: localStorage indisponivel', e);
     return '';
   }
 }
@@ -95,7 +98,11 @@ export function loadCachedNickname(): string {
 export function saveCachedNickname(nickname: string): void {
   try {
     localStorage.setItem(NICKNAME_KEY, nickname);
-  } catch { /* ignore */ }
+  } catch (e) {
+    // P2-G8-05: cache nao salva em modo privado iOS. UX ok (modal funcionou),
+    // mas usuario tera que digitar de novo na proxima sessao. Warn pra debug.
+    console.warn('saveCachedNickname: localStorage indisponivel', e);
+  }
 }
 
 // Le ?nickname= da URL (ex: WebView do app passando o user logado).

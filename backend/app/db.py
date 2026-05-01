@@ -35,6 +35,11 @@ def init_db(db_path: str = DB_PATH) -> None:
 def get_connection(db_path: str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # P2-G7-03: aplica PRAGMA journal_mode=WAL em toda conexao. init_db ja faz
+    # isso, mas se um DB existente for restaurado (backup, snapshot Railway)
+    # ou se init_db nao tiver rodado por algum motivo, esta linha garante WAL
+    # mode antes de qualquer query. Idempotente: se ja for WAL, no-op.
+    conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
 

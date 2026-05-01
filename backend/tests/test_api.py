@@ -58,13 +58,22 @@ class TestCreateScore:
         assert client.post("/scores", json=valid_payload(total_pct=101)).status_code == 422
 
     def test_rejects_implausible_time(self, client: TestClient):
+        # Business rule (validate_plausible) -> 400. Schema invalid -> 422.
         r = client.post("/scores", json=valid_payload(level_reached=10, time_seconds=5))
-        assert r.status_code == 422
+        assert r.status_code == 400
         assert "muito baixo" in r.json()["detail"]
+
+    def test_rejects_implausible_high_time(self, client: TestClient):
+        # P2-G7-06: validate_plausible rejeita > 3600s (60min)
+        r = client.post(
+            "/scores", json=valid_payload(level_reached=10, time_seconds=4000)
+        )
+        assert r.status_code == 400
+        assert "implausivel" in r.json()["detail"]
 
     def test_rejects_pct_100_below_level_10(self, client: TestClient):
         r = client.post("/scores", json=valid_payload(level_reached=5, total_pct=100))
-        assert r.status_code == 422
+        assert r.status_code == 400
         assert "100" in r.json()["detail"]
 
     def test_accepts_pct_100_at_level_10(self, client: TestClient):
@@ -128,6 +137,15 @@ class TestRateLimit:
             r = client.post("/scores", json=valid_payload(nickname=f"USR_{i}"))
             assert r.status_code == 201
         r = client.post("/scores", json=valid_payload(nickname="USR_X"))
+        assert r.status_code == 429
+
+    def test_get_rate_limit(self, client: TestClient):
+        # P2-G7-08: GET /scores/top tem limite 60/min. Validamos que apos 60
+        # requests rapidos do mesmo IP, a 61a recebe 429.
+        for _ in range(60):
+            r = client.get("/scores/top")
+            assert r.status_code == 200
+        r = client.get("/scores/top")
         assert r.status_code == 429
 
 

@@ -7,6 +7,11 @@ import { startRun } from '../state/RunStats';
 export class TitleScene extends Phaser.Scene {
   private eyeStrainButton!: Phaser.GameObjects.Text;
   private soundButton!: Phaser.GameObjects.Text;
+  // P2-G8-06: bloqueia clique duplo em JOGAR/selectors/RANKING durante a
+  // transicao pra outra scene. Phaser scene.start e idempotente, mas
+  // disparamos sfx.prime() e startRun em sequencia — clique duplo causaria
+  // resets duplos de stats sem necessidade.
+  private transitioning = false;
 
   constructor() {
     super({ key: 'TitleScene' });
@@ -14,6 +19,7 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#1B5E20');
+    this.transitioning = false;
 
     // Sincroniza muted do sfx player com o setting persistido
     sfx.setMuted(!getSettings().soundEnabled);
@@ -55,6 +61,8 @@ export class TitleScene extends Phaser.Scene {
     });
 
     startButton.on('pointerdown', () => {
+      if (this.transitioning) return;
+      this.transitioning = true;
       // prime() garante que AudioContext seja criado dentro deste user gesture
       // pra que o primeiro SFX no GameScene nao seja silenciado em mobile Safari
       sfx.prime();
@@ -118,6 +126,8 @@ export class TitleScene extends Phaser.Scene {
       btn.on('pointerover', () => btn.setBackgroundColor('#2E7D32'));
       btn.on('pointerout', () => btn.setBackgroundColor('#1B5E20'));
       btn.on('pointerdown', () => {
+        if (this.transitioning) return;
+        this.transitioning = true;
         sfx.prime();
         // Selector e modo pratica: nao oferece submit pro ranking
         startRun({ practiceMode: true, startLevelIndex: i });
@@ -138,6 +148,8 @@ export class TitleScene extends Phaser.Scene {
     rankingBtn.on('pointerover', () => rankingBtn.setBackgroundColor('#558B2F'));
     rankingBtn.on('pointerout', () => rankingBtn.setBackgroundColor('#3A7BD5'));
     rankingBtn.on('pointerdown', () => {
+      if (this.transitioning) return;
+      this.transitioning = true;
       sfx.prime();
       this.scene.start('RankingScene');
     });

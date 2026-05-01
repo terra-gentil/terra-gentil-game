@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30 (QA round-4 + qa-fixes round-4)
+**Ultima atualizacao**: 2026-04-30 (QA round-4 + qa-fixes round-4/5/6 + Vitest)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -154,6 +154,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+467efb2 qa-fixes round-6: 9 P2 (backend hardening + frontend polish)
+79806d9 qa-fixes round-5: P2 polish + docs + tests Vitest
 ef0ac6a qa-fixes round-4: aplica 8 P1 do QA round-4
 c13b9fa qa: round-4 reports - G0..G8 (10 sub-agentes Sonnet)
 ad71970 G7.5: WebView no app + nickname via URL param
@@ -579,6 +581,24 @@ continuar cobrindo TODAS as sprints existentes.
 10 paralelos). Achou P0=0, P1=8, P2=23, P3=54. Todos os 8 P1 fechados em
 commit `ef0ac6a` (qa-fixes round-4). Os 20 relatorios estao em
 `qa/g{0..8,7.5}/pass-{NN}/{relatorio,handoff}.md`.
+
+**Round-5 (2026-04-30, sem QA novo)**: aplicado 4 P2 cirurgicos + Vitest
+onboarding + docs. ESC fecha SubmitModal (G8), cursor preserva posicao em
+input (G8), logs uvicorn sem IP (G7 LGPD), created_at com tzinfo UTC (G7).
+Novo: `jogo/` ganhou Vitest + jsdom. 12 tests cobrindo `adoptNicknameFromUrl`.
+Commit `79806d9`. Tambem branch `g6.5-audio-prep` com facade dual synth/OGG
+pronta pra Andre dropar OGGs do FamiStudio.
+
+**Round-6 (2026-04-30, sem QA novo)**: 9 P2 backend hardening + frontend.
+Business rule -> 400 (G7), exception_handler global (G7), WAL defensivo
+em get_connection (G7), validate_plausible rejeita time > 60min (G7),
+test pra GET rate limit (G7), HEALTHCHECK no Dockerfile (G7), log lifespan
+(G7), localStorage com console.warn (G8), TitleScene flag transitioning
+gateando duplo-clique (G8). Commit `467efb2`. Backend 22/22 pytest passa.
+
+**Estado P2 pos round-6**: 13 P2 fechados nos 3 rounds de fixes. Sobram ~10 P2
+todos UX/trade-offs documentados em "Trade-offs aceitos" ou pendentes de
+G6.5/G9.
 
 ---
 

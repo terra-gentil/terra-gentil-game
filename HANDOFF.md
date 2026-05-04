@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-05-04 (handoff de fim de sessao pos-round-4/5/6)
+**Ultima atualizacao**: 2026-05-04 (pos-hotfix P1-G7-02 + smoke test manual em prod)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -29,18 +29,24 @@ O Claude deve:
 3. Listar tasks abertas se houver
 4. Ler ultimo handoff de QA relevante em `qa/g{N}/pass-{NN}/handoff.md`
 
-### Estado pos-sessao 2026-04-30 (4 dias atras)
+### Estado pos-sessao 2026-05-04
 
-- HEAD `d273b48` em `main`, pushada
+- HEAD `1290ddd` em `main`, pushada (hotfix P1-G7-02 prod 502)
+- Smoke test manual rodado em prod, 6/6 curls verdes (validou rounds 4/5/6)
 - Branch `g6.5-audio-prep` (commit `dace5e1`) pushada, NAO mergeada — espera Andre dropar OGGs do FamiStudio em `jogo/public/assets/audio/` e virar `USE_OGG_SFX=true` em `Constants.ts`
 - 0 P1 abertos. 13 P2 fechados nos 3 rounds. ~10 P2 abertos sao trade-offs aceitos
 - 34 tests automatizados (22/22 pytest backend, 12/12 vitest frontend)
-- Smoke test em prod NAO rodou (GitHub nao conectado, ver "Smoke test agendado falhou em rodar")
+- Smoke test agendado ainda NAO rodou (GitHub nao conectado pelo Claude Code, mas push e fix manual funcionaram via PowerShell local)
 - Bloqueios em Andre: G9 (direcao de arte) e G6.5 (FamiStudio + OGGs)
+
+### Estado pos-sessao 2026-04-30 (sessao anterior)
+
+- HEAD `d273b48` em `main`, pushada
+- 0 P1 abertos, 13 P2 fechados, smoke automatizado falhou em rodar (auto-disabled)
 
 ### Caminhos possiveis no proximo chat (em ordem de prio)
 
-1. **Validar deploy em prod**: `/web-setup` + reagendar smoke test, OU rodar 6 curls manual (steps em `qa/g7/pass-01/handoff.md`)
+1. **Reagendar smoke test automatizado**: rodar `/web-setup` no Claude Code pra desbloquear GitHub access, depois reagendar a routine `trig_*` que ficou auto-disabled em 2026-05-02. Sem isso, regressoes futuras passam batidas (foi exatamente como o P1-G7-02 ficou silencioso 4 dias)
 2. **G9 visual** se Andre tiver direcao de arte (estilo, referencia, sprite Gentileza, tilemap real)
 3. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
 4. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
@@ -172,6 +178,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+1290ddd fix: hotfix P1-G7-02 - prod 502 por permissao em /data
+afdb107 handoff: fim de sessao 2026-04-30 + estado pos-pausa de 4 dias
 d273b48 handoff: atualiza pos qa-fixes round-5 e round-6
 467efb2 qa-fixes round-6: 9 P2 (backend hardening + frontend polish)
 79806d9 qa-fixes round-5: P2 polish + docs + tests Vitest
@@ -586,7 +594,7 @@ Pode forcar via Actions tab > Run workflow.
 | G4 | 1, 2, 3 | 0 | Limpo |
 | G5 | 1, 2, 3 | 0 | Limpo |
 | G6 | 1, 2 | 0 | Limpo (P1-01/P1-02 fechados em qa-fixes round-3) |
-| G7 | 1 | 0 | 4 P1 fechados em qa-fixes round-4 (proxy headers, USER, fixture, test_cors) |
+| G7 | 1 | 0 | 4 P1 fechados em qa-fixes round-4 (proxy headers, USER, fixture, test_cors). P1-G7-02 reaberto 2026-05-04 (regressao prod) e re-fechado em hotfix `1290ddd` via entrypoint script |
 | G7.5 | 1 | 0 | Limpo (so P2 documentais) |
 | G8 | 1 | 0 | 4 P1 fechados em qa-fixes round-4 (cuts reset, alive flag, TOP 13, timeout) |
 
@@ -624,14 +632,33 @@ G6.5/G9.
 `trig_01QMkJghtGnCgiFW3uPUYrHK` foi auto-disabled com motivo
 `auto_disabled_repo_access` porque GitHub nao tava conectado pro repo
 `terra-gentil/terra-gentil-game`. Resultado: round-4/5/6 deployados em prod
-mas SEM validacao automatica externa. Pra desbloquear:
+mas SEM validacao automatica externa por ~4 dias.
+
+**Hotfix P1-G7-02 (2026-05-04)**: smoke test manual em prod (6 curls) detectou
+prod retornando 502 em todos endpoints. Causa: round-4 adicionou USER appuser
+no Dockerfile mas o volume Railway monta sobre /data com owner root em runtime,
+descartando o chown do build. uvicorn falhava em init_db (PermissionError em
+sqlite3.connect) e nao bind na porta. Fix: container starta como root, novo
+`backend/entrypoint.sh` refaz chown em runtime, depois dropa privileges pra
+appuser via `su -p` antes de exec uvicorn. Mantem P1-G7-02 fechado.
+
+Smoke pos-hotfix (2026-05-04):
+- GET /health -> 200
+- GET /scores/top -> 200, ordering correto (PERSIST lvl4 > DIAG lvl2)
+- POST /scores valido -> 201, id=3 (sequencial), created_at com tzinfo (round-5 OK)
+- POST nickname lowercase -> 422 Pydantic regex (mensagem correta)
+- POST pct=100 level=5 -> 400 business rule (round-6 OK, antes era 422)
+- OPTIONS CORS preflight -> 200 com Access-Control-Allow-Origin GitHub Pages
+
+Score residual `SMOKE18500` (id=3) ficou no banco junto com DIAG/PERSIST.
+Vai ser empurrado pra baixo conforme jogadores reais postarem.
+
+**Pra desbloquear smoke test automatizado** (continuar pendente):
 1. Rodar `/web-setup` no Claude Code (sincroniza credenciais GitHub) OU instalar
    Claude GitHub App em https://claude.ai/code/onboarding?magic=github-app-setup
-2. Reagendar o smoke test (mesmo prompt, novo `run_once_at`) OU rodar manual
-   via curl: ver `qa/g7/pass-01/handoff.md` "Gaps abertos" pros 6 steps.
-
-Os fixes em si compilam/passam tests locais (22/22 pytest backend, 12/12 vitest
-frontend). Risco baixo de bug em prod, mas nao zero.
+2. Reagendar a routine. Tambem desbloqueia push automatico do Claude (push
+   manual via PowerShell local funcionou em 2026-05-04 apos limpar cmdkey
+   `LegacyGeneric:target=git:https://github.com` cached da conta `fourd-qa`).
 
 ---
 

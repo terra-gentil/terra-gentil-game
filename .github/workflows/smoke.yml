@@ -1,0 +1,80 @@
+name: Smoke test backend prod
+
+on:
+  schedule:
+    # 12:00 UTC diario = 09:00 BRT (manha, antes do dia comecar)
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE: https://terra-gentil-game-production.up.railway.app
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 1. GET /health
+        run: |
+          set -euo pipefail
+          BODY=$(curl -sf "$BASE/health")
+          echo "$BODY"
+          echo "$BODY" | jq -e '.status == "ok" and (.version | type == "string")' > /dev/null
+
+      - name: 2. GET /scores/top
+        run: |
+          set -euo pipefail
+          curl -sf "$BASE/scores/top?limit=10" -o /tmp/top.json
+          jq . /tmp/top.json
+          jq -e '.scores | type == "array"' /tmp/top.json > /dev/null
+          # Ordenacao desc por (level_reached, total_pct, -time_seconds)
+          jq -e '
+            .scores
+            | [.[] | [.level_reached, .total_pct, (-.time_seconds)]]
+            | . == (sort | reverse)
+          ' /tmp/top.json > /dev/null
+
+      - name: 3. POST /scores valido (esperado 201, created_at com Z)
+        run: |
+          set -euo pipefail
+          NICK="SMOKE$(date +%H%M%S)"
+          BODY=$(curl -sf -X POST "$BASE/scores" \
+            -H "Content-Type: application/json" \
+            -d "{\"nickname\":\"$NICK\",\"level_reached\":3,\"total_pct\":40,\"time_seconds\":45}")
+          echo "$BODY"
+          jq -e '.id and (.created_at | endswith("Z"))' <<< "$BODY" > /dev/null
+
+      - name: 4. POST nickname lowercase (esperado 422 string_pattern_mismatch)
+        run: |
+          set -euo pipefail
+          STATUS=$(curl -s -o /tmp/r4.json -w "%{http_code}" -X POST "$BASE/scores" \
+            -H "Content-Type: application/json" \
+            -d '{"nickname":"lowercase","level_reached":3,"total_pct":40,"time_seconds":45}')
+          cat /tmp/r4.json
+          [ "$STATUS" = "422" ] || { echo "expected 422 got $STATUS"; exit 1; }
+          jq -e '.detail[0].type == "string_pattern_mismatch"' /tmp/r4.json > /dev/null
+
+      - name: 5. POST pct=100 level=5 (esperado 400 business rule round-6)
+        run: |
+          set -euo pipefail
+          STATUS=$(curl -s -o /tmp/r5.json -w "%{http_code}" -X POST "$BASE/scores" \
+            -H "Content-Type: application/json" \
+            -d '{"nickname":"PCTBUG","level_reached":5,"total_pct":100,"time_seconds":120}')
+          cat /tmp/r5.json
+          [ "$STATUS" = "400" ] || { echo "expected 400 got $STATUS"; exit 1; }
+          jq -e '.detail | contains("level_reached == 10")' /tmp/r5.json > /dev/null
+
+      - name: 6. OPTIONS /scores CORS preflight
+        run: |
+          set -euo pipefail
+          HEADERS=$(curl -s -o /dev/null -D - -X OPTIONS "$BASE/scores" \
+            -H "Origin: https://terra-gentil.github.io" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type")
+          echo "$HEADERS"
+          echo "$HEADERS" | grep -qi "^HTTP/.* 200" || { echo "expected 200"; exit 1; }
+          echo "$HEADERS" | grep -qi "^Access-Control-Allow-Origin: https://terra-gentil.github.io" \
+            || { echo "missing or wrong CORS allow-origin header"; exit 1; }

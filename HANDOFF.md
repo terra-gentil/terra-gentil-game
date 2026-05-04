@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-05-04 (pos-hotfix P1-G7-02 + smoke test manual em prod)
+**Ultima atualizacao**: 2026-05-04 (smoke automatizado migrado de routine Claude pra GitHub Actions, primeiro run verde)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -29,14 +29,16 @@ O Claude deve:
 3. Listar tasks abertas se houver
 4. Ler ultimo handoff de QA relevante em `qa/g{N}/pass-{NN}/handoff.md`
 
-### Estado pos-sessao 2026-05-04
+### Estado pos-sessao 2026-05-04 (continuacao mesmo dia)
 
-- HEAD `1290ddd` em `main`, pushada (hotfix P1-G7-02 prod 502)
-- Smoke test manual rodado em prod, 6/6 curls verdes (validou rounds 4/5/6)
+- HEAD `c1bd7f5` em `main`, pushada (workflow smoke diario)
+- Smoke test automatizado **agora roda via GitHub Actions** (`.github/workflows/smoke.yml`), cron `0 12 * * *` (9h BRT). Primeiro run via `workflow_dispatch` em 2026-05-04 23:16Z passou 6/6 (run id 25348753277). Falhas mandam email automatico pra eng.andrehz@gmail.com.
+- Routine Claude `trig_019Zm6vSMop98mBXaJhTyfdu` foi criada e disabled — sandbox do Anthropic Cloud bloqueia outbound HTTP pra Railway com `host_not_allowed` (allowlist de plataforma, nao configuravel pelo usuario). Por isso a routine antiga `trig_01QM...` tambem ia falhar mesmo com GitHub access OK
+- Smoke test manual rodado em prod antes da migracao, 6/6 curls verdes (validou rounds 4/5/6)
 - Branch `g6.5-audio-prep` (commit `dace5e1`) pushada, NAO mergeada — espera Andre dropar OGGs do FamiStudio em `jogo/public/assets/audio/` e virar `USE_OGG_SFX=true` em `Constants.ts`
 - 0 P1 abertos. 13 P2 fechados nos 3 rounds. ~10 P2 abertos sao trade-offs aceitos
-- 34 tests automatizados (22/22 pytest backend, 12/12 vitest frontend)
-- Smoke test agendado ainda NAO rodou (GitHub nao conectado pelo Claude Code, mas push e fix manual funcionaram via PowerShell local)
+- 34 tests automatizados (22/22 pytest backend, 12/12 vitest frontend) + smoke diario
+- Banco prod: 5 scores residuais (DIAG, PERSIST, SMOKE18500, SMOKE6017, SMOKE231625) — vao ser empurrados pra baixo conforme jogadores reais postarem
 - Bloqueios em Andre: G9 (direcao de arte) e G6.5 (FamiStudio + OGGs)
 
 ### Estado pos-sessao 2026-04-30 (sessao anterior)
@@ -46,12 +48,11 @@ O Claude deve:
 
 ### Caminhos possiveis no proximo chat (em ordem de prio)
 
-1. **Reagendar smoke test automatizado**: rodar `/web-setup` no Claude Code pra desbloquear GitHub access, depois reagendar a routine `trig_*` que ficou auto-disabled em 2026-05-02. Sem isso, regressoes futuras passam batidas (foi exatamente como o P1-G7-02 ficou silencioso 4 dias)
-2. **G9 visual** se Andre tiver direcao de arte (estilo, referencia, sprite Gentileza, tilemap real)
-3. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
-4. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
-5. **G10 lancamento**: remover `console.log` (trade-off #6), polish final, divulgacao
-6. **Backlog P2 restante** (baixo ganho): P2-G7-04 connection pool, P2-G8-02 documentar time_seconds inclui retries, P2-G7.5-01/02/03 documentar contratos URL param
+1. **G9 visual** se Andre tiver direcao de arte (estilo, referencia, sprite Gentileza, tilemap real)
+2. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
+3. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
+4. **G10 lancamento**: remover `console.log` (trade-off #6), polish final, divulgacao
+5. **Backlog P2 restante** (baixo ganho): P2-G7-04 connection pool, P2-G8-02 documentar time_seconds inclui retries, P2-G7.5-01/02/03 documentar contratos URL param
 
 ---
 
@@ -178,6 +179,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+c1bd7f5 ci: smoke test diario backend prod (substitui routine Claude que sandbox bloqueia)
+3ef7edd handoff: pos-hotfix P1-G7-02 + smoke 6 curls validado em prod
 1290ddd fix: hotfix P1-G7-02 - prod 502 por permissao em /data
 afdb107 handoff: fim de sessao 2026-04-30 + estado pos-pausa de 4 dias
 d273b48 handoff: atualiza pos qa-fixes round-5 e round-6
@@ -634,6 +637,18 @@ G6.5/G9.
 `terra-gentil/terra-gentil-game`. Resultado: round-4/5/6 deployados em prod
 mas SEM validacao automatica externa por ~4 dias.
 
+**Resolvido em 2026-05-04 via GitHub Actions** (commit `c1bd7f5`):
+descoberto que mesmo com `/web-setup` conectado, sandbox do Anthropic Cloud
+bloqueia outbound HTTP pra Railway com `host_not_allowed` — allowlist de
+plataforma, nao configuravel pelo usuario. Routine Claude nao consegue
+fazer smoke contra prod por design. Migracao pra GitHub Actions:
+`.github/workflows/smoke.yml` com cron `0 12 * * *` (9h BRT diario) e
+`workflow_dispatch` pra trigger manual. Roda os 6 mesmos curls com
+validacao via `set -euo pipefail` + `jq -e`. Falhas geram email automatico
+pra eng.andrehz@gmail.com. Primeiro run em 2026-05-04 23:16Z passou 6/6
+(run id 25348753277). Routine `trig_019Zm6vSMop98mBXaJhTyfdu` ficou
+disabled como historico.
+
 **Hotfix P1-G7-02 (2026-05-04)**: smoke test manual em prod (6 curls) detectou
 prod retornando 502 em todos endpoints. Causa: round-4 adicionou USER appuser
 no Dockerfile mas o volume Railway monta sobre /data com owner root em runtime,
@@ -653,12 +668,10 @@ Smoke pos-hotfix (2026-05-04):
 Score residual `SMOKE18500` (id=3) ficou no banco junto com DIAG/PERSIST.
 Vai ser empurrado pra baixo conforme jogadores reais postarem.
 
-**Pra desbloquear smoke test automatizado** (continuar pendente):
-1. Rodar `/web-setup` no Claude Code (sincroniza credenciais GitHub) OU instalar
-   Claude GitHub App em https://claude.ai/code/onboarding?magic=github-app-setup
-2. Reagendar a routine. Tambem desbloqueia push automatico do Claude (push
-   manual via PowerShell local funcionou em 2026-05-04 apos limpar cmdkey
-   `LegacyGeneric:target=git:https://github.com` cached da conta `fourd-qa`).
+**Smoke test automatizado: RESOLVIDO** (2026-05-04, via GitHub Actions —
+ver secao acima). Caminho descartado: routine Claude bate em
+`host_not_allowed` no sandbox da Anthropic Cloud, nao da pra contornar.
+Caminho ativo: `.github/workflows/smoke.yml` no proprio repo.
 
 ---
 

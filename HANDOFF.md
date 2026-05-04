@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-04-30 (QA round-4 + qa-fixes round-4/5/6 + Vitest)
+**Ultima atualizacao**: 2026-05-04 (handoff de fim de sessao pos-round-4/5/6)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -28,6 +28,24 @@ O Claude deve:
 2. Olhar git log mais recente: `git log --oneline -10`
 3. Listar tasks abertas se houver
 4. Ler ultimo handoff de QA relevante em `qa/g{N}/pass-{NN}/handoff.md`
+
+### Estado pos-sessao 2026-04-30 (4 dias atras)
+
+- HEAD `d273b48` em `main`, pushada
+- Branch `g6.5-audio-prep` (commit `dace5e1`) pushada, NAO mergeada — espera Andre dropar OGGs do FamiStudio em `jogo/public/assets/audio/` e virar `USE_OGG_SFX=true` em `Constants.ts`
+- 0 P1 abertos. 13 P2 fechados nos 3 rounds. ~10 P2 abertos sao trade-offs aceitos
+- 34 tests automatizados (22/22 pytest backend, 12/12 vitest frontend)
+- Smoke test em prod NAO rodou (GitHub nao conectado, ver "Smoke test agendado falhou em rodar")
+- Bloqueios em Andre: G9 (direcao de arte) e G6.5 (FamiStudio + OGGs)
+
+### Caminhos possiveis no proximo chat (em ordem de prio)
+
+1. **Validar deploy em prod**: `/web-setup` + reagendar smoke test, OU rodar 6 curls manual (steps em `qa/g7/pass-01/handoff.md`)
+2. **G9 visual** se Andre tiver direcao de arte (estilo, referencia, sprite Gentileza, tilemap real)
+3. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
+4. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
+5. **G10 lancamento**: remover `console.log` (trade-off #6), polish final, divulgacao
+6. **Backlog P2 restante** (baixo ganho): P2-G7-04 connection pool, P2-G8-02 documentar time_seconds inclui retries, P2-G7.5-01/02/03 documentar contratos URL param
 
 ---
 
@@ -154,8 +172,10 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+d273b48 handoff: atualiza pos qa-fixes round-5 e round-6
 467efb2 qa-fixes round-6: 9 P2 (backend hardening + frontend polish)
 79806d9 qa-fixes round-5: P2 polish + docs + tests Vitest
+f12c293 handoff: atualiza pos-QA round-4 e qa-fixes round-4
 ef0ac6a qa-fixes round-4: aplica 8 P1 do QA round-4
 c13b9fa qa: round-4 reports - G0..G8 (10 sub-agentes Sonnet)
 ad71970 G7.5: WebView no app + nickname via URL param
@@ -599,6 +619,19 @@ gateando duplo-clique (G8). Commit `467efb2`. Backend 22/22 pytest passa.
 **Estado P2 pos round-6**: 13 P2 fechados nos 3 rounds de fixes. Sobram ~10 P2
 todos UX/trade-offs documentados em "Trade-offs aceitos" ou pendentes de
 G6.5/G9.
+
+**Smoke test agendado falhou em rodar (2026-05-02)**: routine
+`trig_01QMkJghtGnCgiFW3uPUYrHK` foi auto-disabled com motivo
+`auto_disabled_repo_access` porque GitHub nao tava conectado pro repo
+`terra-gentil/terra-gentil-game`. Resultado: round-4/5/6 deployados em prod
+mas SEM validacao automatica externa. Pra desbloquear:
+1. Rodar `/web-setup` no Claude Code (sincroniza credenciais GitHub) OU instalar
+   Claude GitHub App em https://claude.ai/code/onboarding?magic=github-app-setup
+2. Reagendar o smoke test (mesmo prompt, novo `run_once_at`) OU rodar manual
+   via curl: ver `qa/g7/pass-01/handoff.md` "Gaps abertos" pros 6 steps.
+
+Os fixes em si compilam/passam tests locais (22/22 pytest backend, 12/12 vitest
+frontend). Risco baixo de bug em prod, mas nao zero.
 
 ---
 

@@ -23,7 +23,7 @@ const TILE_COLOR: Record<number, number> = {
   [TILE.STONE]: 0x8E8E8E,
 };
 
-const HUD_HEIGHT = 80;
+const HUD_HEIGHT = 100;
 
 const FUEL_MAX = 100;
 const FUEL_DECAY_INTERVAL_MS = 500;
@@ -56,6 +56,8 @@ interface VisualScale {
   dpadArm: number;
   dpadArrowFont: string;
   dpadStroke: number;
+  dpadCenterX: number;
+  dpadAlpha: number;
   bgColor: string;
 }
 
@@ -65,13 +67,15 @@ function visualScaleFor(settings: Settings): VisualScale {
       hudFont: '44px',
       hudStroke: 5,
       fuelLabelFont: '24px',
-      playerScale: 0.85,
+      playerScale: 1.2,
       playerStroke: 7,
       centerFont: '56px',
-      dpadButtonSize: 140,
-      dpadArm: 105,
-      dpadArrowFont: '84px',
-      dpadStroke: 5,
+      dpadButtonSize: 90,
+      dpadArm: 70,
+      dpadArrowFont: '48px',
+      dpadStroke: 4,
+      dpadCenterX: 125,
+      dpadAlpha: 0.22,
       bgColor: '#062007',
     };
   }
@@ -79,13 +83,15 @@ function visualScaleFor(settings: Settings): VisualScale {
     hudFont: '32px',
     hudStroke: 4,
     fuelLabelFont: '20px',
-    playerScale: 0.7,
+    playerScale: 1.0,
     playerStroke: 4,
     centerFont: '48px',
-    dpadButtonSize: 120,
-    dpadArm: 90,
-    dpadArrowFont: '64px',
-    dpadStroke: 3,
+    dpadButtonSize: 70,
+    dpadArm: 55,
+    dpadArrowFont: '36px',
+    dpadStroke: 2,
+    dpadCenterX: 105,
+    dpadAlpha: 0.12,
     bgColor: '#0E3211',
   };
 }
@@ -100,11 +106,13 @@ export class GameScene extends Phaser.Scene {
   private worldH = 0;
   private worldOffsetY = 0;
 
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.GameObjects.Sprite;
   private playerTileX = 0;
   private playerTileY = 0;
   private dir: Dir = 'NONE';
   private pendingDir: Dir = 'NONE';
+  // Ultima direcao que o player olhou (pra escolher idle anim quando parado)
+  private lastFacing: 'down' | 'up' | 'left' | 'right' = 'down';
   private speed = 240;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -134,6 +142,7 @@ export class GameScene extends Phaser.Scene {
     this.levelIndex = data.levelIndex ?? 0;
     this.dir = 'NONE';
     this.pendingDir = 'NONE';
+    this.lastFacing = 'down';
     this.cutCount = 0;
     this.levelCleared = false;
     this.tileGrid = [];
@@ -203,15 +212,19 @@ export class GameScene extends Phaser.Scene {
 
     this.playerTileX = this.level.spawn_jogador.editor_x;
     this.playerTileY = this.level.spawn_jogador.editor_y;
-    this.player = this.add.rectangle(
+    this.player = this.add.sprite(
       this.tileToPx(this.playerTileX),
       this.tileToPy(this.playerTileY),
-      TILE_SIZE * this.vs.playerScale,
-      TILE_SIZE * this.vs.playerScale,
-      COLORS.GENTILEZA_YELLOW
+      'gentileza',
+      0
     );
-    this.player.setStrokeStyle(this.vs.playerStroke, COLORS.MOWER_ORANGE);
+    // Origin (0.5, 0.65) alinha pes ligeiramente abaixo do centro do tile
+    // (cabeca/folhas ficam acima do tile, comportamento RPG classico).
+    // O ponto (player.x, player.y) continua sendo o centro logico do tile.
+    this.player.setOrigin(0.5, 0.65);
+    this.player.setScale(this.vs.playerScale);
     this.player.setDepth(10);
+    this.player.play('g-idle-down');
 
     this.cameras.main.startFollow(this.player, false, 0.1, 0);
 
@@ -338,7 +351,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildDPad(): void {
-    const cx = 180;
+    const cx = this.vs.dpadCenterX;
     // Em modo olhos cansados, botoes maiores precisam de mais margem do bottom
     // pra nao bater no home indicator do iPhone (P1 do QA G5 pass-01).
     const cy = GAME_HEIGHT - (this.vs.dpadButtonSize / 2 + this.vs.dpadArm + 20);
@@ -355,7 +368,9 @@ export class GameScene extends Phaser.Scene {
       const bx = cx + btn.offsetX;
       const by = cy + btn.offsetY;
 
-      const rect = this.add.rectangle(bx, by, size, size, 0x000000, 0.55);
+      const baseAlpha = this.vs.dpadAlpha;
+      const hoverAlpha = Math.min(0.85, baseAlpha + 0.25);
+      const rect = this.add.rectangle(bx, by, size, size, 0x000000, baseAlpha);
       rect.setStrokeStyle(this.vs.dpadStroke, 0xFFFFFF);
       rect.setScrollFactor(0).setDepth(2000);
       rect.setInteractive({ useHandCursor: true });
@@ -382,8 +397,8 @@ export class GameScene extends Phaser.Scene {
         }
         this.requestDir(btn.dir);
       });
-      rect.on('pointerover', () => rect.setFillStyle(0x000000, 0.75));
-      rect.on('pointerout', () => rect.setFillStyle(0x000000, 0.55));
+      rect.on('pointerover', () => rect.setFillStyle(0x000000, hoverAlpha));
+      rect.on('pointerout', () => rect.setFillStyle(0x000000, baseAlpha));
     }
   }
 
@@ -405,6 +420,22 @@ export class GameScene extends Phaser.Scene {
     if (this.dir === 'NONE') {
       this.dir = d;
       this.pendingDir = 'NONE';
+      this.updateFacing();
+    }
+  }
+
+  // Atualiza lastFacing baseado em dir atual e toca a anim correspondente.
+  // Walking quando dir != NONE, idle (frame fixo) quando dir == NONE.
+  private updateFacing(): void {
+    if (this.dir === 'LEFT') this.lastFacing = 'left';
+    else if (this.dir === 'RIGHT') this.lastFacing = 'right';
+    else if (this.dir === 'UP') this.lastFacing = 'up';
+    else if (this.dir === 'DOWN') this.lastFacing = 'down';
+    const animKey = this.dir === 'NONE'
+      ? `g-idle-${this.lastFacing}`
+      : `g-walk-${this.lastFacing}`;
+    if (this.player.anims.currentAnim?.key !== animKey) {
+      this.player.play(animKey);
     }
   }
 
@@ -442,6 +473,7 @@ export class GameScene extends Phaser.Scene {
       this.player.x = this.tileToPx(this.playerTileX);
       this.player.y = this.tileToPy(this.playerTileY);
       this.dir = 'NONE';
+      this.updateFacing();
       return;
     }
 
@@ -469,6 +501,7 @@ export class GameScene extends Phaser.Scene {
         const pv = DIR_VEC[this.pendingDir];
         if (this.canEnter(this.playerTileX + pv.x, this.playerTileY + pv.y)) {
           this.dir = this.pendingDir;
+          this.updateFacing();
         }
         this.pendingDir = 'NONE';
       }

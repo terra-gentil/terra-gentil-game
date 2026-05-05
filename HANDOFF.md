@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-05-04 (smoke automatizado migrado de routine Claude pra GitHub Actions, primeiro run verde)
+**Ultima atualizacao**: 2026-05-04 (G9 parcial — sprite Gentileza pixel-art + animations + polish UI)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -48,9 +48,9 @@ O Claude deve:
 
 ### Caminhos possiveis no proximo chat (em ordem de prio)
 
-1. **G9 visual** se Andre tiver direcao de arte (estilo, referencia, sprite Gentileza, tilemap real)
+1. **G9 tilemap** — sprite do mascote pronto, falta arte real pro terreno (grama cortada, grama alta, flores, pedra). Atualmente sao retangulos coloridos. Andre pode gerar via mesma IA das poses ou definir paleta/textura
 2. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
-3. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
+3. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 + G9 sprite (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
 4. **G10 lancamento**: remover `console.log` (trade-off #6), polish final, divulgacao
 5. **Backlog P2 restante** (baixo ganho): P2-G7-04 connection pool, P2-G8-02 documentar time_seconds inclui retries, P2-G7.5-01/02/03 documentar contratos URL param
 
@@ -171,7 +171,7 @@ terra-gentil-game/
 - [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway validado em prod, sem QA ainda)
 - [x] **G7.5** — WebView no app Terra Gentil (GameScreen com landscape lock + nickname via URL param)
 - [x] **G8** — Frontend ranking (modal de submit + tela de top 50 + cache de nickname)
-- [ ] **G9** — Visual final (sprite Gentileza pelo design, tilemap real)
+- [~] **G9** — Visual final: sprite Gentileza animado feito (12 frames pixel-art via IA + 8 anims idle/walk x 4 direcoes). Tilemap pixel-art real ainda pendente.
 - [ ] **G10** — Lancamento
 
 ---
@@ -179,6 +179,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+361a602 G9 (parcial): sprite Gentileza pixel-art + animations + polish UI
+f26a3dd handoff: smoke automatizado migrado pra GitHub Actions
 c1bd7f5 ci: smoke test diario backend prod (substitui routine Claude que sandbox bloqueia)
 3ef7edd handoff: pos-hotfix P1-G7-02 + smoke 6 curls validado em prod
 1290ddd fix: hotfix P1-G7-02 - prod 502 por permissao em /data
@@ -695,10 +697,16 @@ frontend ranking integrado e validado em browser.
 oferece submit em game over/win). Justo: comecou no meio, total_pct seria
 falso. Quem quer ranking real, JOGAR desde a fase 1.
 
-### Pra G9 (visual final)
-1. Sprite real do mascote Gentileza (atualmente retangulo amarelo com borda)
-2. Tilemap pixel-art real (atualmente retangulos coloridos)
-3. Direcao de arte definitiva (qual estilo? referencia)
+### Pra G9 (visual final — parcialmente completo)
+1. ~~Sprite real do mascote Gentileza~~ FEITO em 361a602:
+   - 12 frames pixel-art gerados por Andre via IA (referencia 3D em `Documents/Terra Gentil/Gentileza/`)
+   - Spritesheet `jogo/public/assets/sprites/gentileza.png` (64x90 frame, 12 frames)
+   - 8 animations: idle/walk x 4 direcoes, walk_right com 4 frames (anim mais fluida)
+   - Pipeline em `pesquisa/analise/extract_gentileza_poses.py` + `build_gentileza_spritesheet.py`
+   - Player Rectangle -> Sprite, origin (0.5, 0.65) pra pes alinharem com base do tile
+   - Polish UI: HUD_HEIGHT 80->100 (respiro vertical), D-pad bem menor + transparente (alpha 0.12)
+2. **Tilemap pixel-art real** (PENDENTE): grama cortada, grama alta, flores, pedra ainda sao retangulos coloridos
+3. Direcao de arte definitiva: estilo do mascote ja definido (cartoon pixel-art, ~16-bit moderno). Aplicar mesmo estilo no terreno
 
 ### G7.5 (CONCLUIDO 2026-04-30)
 Repo do app: `terra-gentil/terra-gentil-app` (clone local em `C:\Gitlab_hz\app-terragentil\`).

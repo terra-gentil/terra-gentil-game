@@ -3,7 +3,7 @@
 > Documento de transferencia de contexto pra retomar o projeto em um novo
 > chat sem perder nada. Atualize este arquivo a cada sprint que fechar.
 
-**Ultima atualizacao**: 2026-05-04 (G9 parcial — sprite Gentileza pixel-art + animations + polish UI)
+**Ultima atualizacao**: 2026-05-04 (G9 quase fechado — sprite + tilemap + title bg, deployado em prod, falta so alinhar botoes UI)
 **HEAD atual**: ver `git log --oneline -1` (HANDOFF nao se auto-atualiza com proprio hash)
 **Sprints concluidas**: G0..G8 + G7.5 (todas com QA round-4 aplicado)
 **Repo**: https://github.com/terra-gentil/terra-gentil-game (publico)
@@ -29,7 +29,17 @@ O Claude deve:
 3. Listar tasks abertas se houver
 4. Ler ultimo handoff de QA relevante em `qa/g{N}/pass-{NN}/handoff.md`
 
-### Estado pos-sessao 2026-05-04 (continuacao mesmo dia)
+### Estado pos-sessao 2026-05-04 (G9 quase fechado)
+
+- HEAD `6c1a3f0` em `main`, pushada e DEPLOYADA em prod (run id 25351577088, ~22s)
+- URL prod: https://terra-gentil.github.io/terra-gentil-game/ — testavel agora
+- G9 completo em quase tudo: sprite Gentileza animado (12 frames), tilemap pixel-art (4 tiles + galao), title screen com logo de fundo
+- Falta so 1 polish: alinhar coordenadas dos botoes funcionais com elementos desenhados na imagem do title (atualmente visual duplicado)
+- BUGFIX importante: galao spawnava em TALL e ao pegar NAO cortava a grama. Andre pediu que ambos acontecam juntos. Fix em onPickupFuel: removido early return
+- Smoke test diario via GitHub Actions ainda funcionando, prox run 2026-05-05 9h BRT
+- Bloqueios em Andre: G6.5 (FamiStudio + OGGs)
+
+### Estado pos-sessao 2026-05-04 (continuacao mesmo dia, smoke setup)
 
 - HEAD `c1bd7f5` em `main`, pushada (workflow smoke diario)
 - Smoke test automatizado **agora roda via GitHub Actions** (`.github/workflows/smoke.yml`), cron `0 12 * * *` (9h BRT). Primeiro run via `workflow_dispatch` em 2026-05-04 23:16Z passou 6/6 (run id 25348753277). Falhas mandam email automatico pra eng.andrehz@gmail.com.
@@ -48,9 +58,9 @@ O Claude deve:
 
 ### Caminhos possiveis no proximo chat (em ordem de prio)
 
-1. **G9 tilemap** — sprite do mascote pronto, falta arte real pro terreno (grama cortada, grama alta, flores, pedra). Atualmente sao retangulos coloridos. Andre pode gerar via mesma IA das poses ou definir paleta/textura
+1. **G9 polish UI alinhamento** — TitleScene tem `title_bg.png` (imagem com logo + JOGAR + selector 1-10 + toggles desenhados). Botoes funcionais ficam por cima nas posicoes Phaser antigas. Resultado: visual duplicado (botao da imagem aparece atras + botao funcional na frente). Trabalho: medir coordenadas dos elementos na imagem 1280x720 (escalada de 731x411), realinhar botoes funcionais pra coincidirem exatamente, e/ou tornar os botoes funcionais transparentes (so hit area) deixando a arte da imagem aparecer
 2. **G6.5 audio** se Andre tiver OGGs prontos: dropar em `jogo/public/assets/audio/`, mudar `USE_OGG_SFX=true`, mergear branch `g6.5-audio-prep`
-3. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 + G9 sprite (sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico)
+3. **Round-7 QA**: rodar 1 sub-agente novo cobrindo round-5 + round-6 + G9 (sprites + tilemap + title bg). Sprints novas? nao — so qa-fixes, talvez 1 sub-agente cirurgico
 4. **G10 lancamento**: remover `console.log` (trade-off #6), polish final, divulgacao
 5. **Backlog P2 restante** (baixo ganho): P2-G7-04 connection pool, P2-G8-02 documentar time_seconds inclui retries, P2-G7.5-01/02/03 documentar contratos URL param
 
@@ -171,7 +181,7 @@ terra-gentil-game/
 - [x] **G7** — Backend ranking (FastAPI + SQLite, deploy Railway validado em prod, sem QA ainda)
 - [x] **G7.5** — WebView no app Terra Gentil (GameScreen com landscape lock + nickname via URL param)
 - [x] **G8** — Frontend ranking (modal de submit + tela de top 50 + cache de nickname)
-- [~] **G9** — Visual final: sprite Gentileza animado feito (12 frames pixel-art via IA + 8 anims idle/walk x 4 direcoes). Tilemap pixel-art real ainda pendente.
+- [~] **G9** — Visual final: sprite Gentileza animado + tilemap pixel-art (4 tiles: cut/tall/flowers/stone) + galao + title bg. Falta so polish: alinhar botoes funcionais com elementos desenhados na imagem do title (Andre disse "e o de menos").
 - [ ] **G10** — Lancamento
 
 ---
@@ -179,6 +189,8 @@ terra-gentil-game/
 ## Git log das sprints
 
 ```
+6c1a3f0 G9: tilemap pixel-art real + title screen background + fix galao+grama
+aba3e55 handoff: G9 parcial concluido (sprite + anims + UI polish)
 361a602 G9 (parcial): sprite Gentileza pixel-art + animations + polish UI
 f26a3dd handoff: smoke automatizado migrado pra GitHub Actions
 c1bd7f5 ci: smoke test diario backend prod (substitui routine Claude que sandbox bloqueia)
@@ -697,16 +709,18 @@ frontend ranking integrado e validado em browser.
 oferece submit em game over/win). Justo: comecou no meio, total_pct seria
 falso. Quem quer ranking real, JOGAR desde a fase 1.
 
-### Pra G9 (visual final — parcialmente completo)
-1. ~~Sprite real do mascote Gentileza~~ FEITO em 361a602:
-   - 12 frames pixel-art gerados por Andre via IA (referencia 3D em `Documents/Terra Gentil/Gentileza/`)
-   - Spritesheet `jogo/public/assets/sprites/gentileza.png` (64x90 frame, 12 frames)
-   - 8 animations: idle/walk x 4 direcoes, walk_right com 4 frames (anim mais fluida)
-   - Pipeline em `pesquisa/analise/extract_gentileza_poses.py` + `build_gentileza_spritesheet.py`
-   - Player Rectangle -> Sprite, origin (0.5, 0.65) pra pes alinharem com base do tile
-   - Polish UI: HUD_HEIGHT 80->100 (respiro vertical), D-pad bem menor + transparente (alpha 0.12)
-2. **Tilemap pixel-art real** (PENDENTE): grama cortada, grama alta, flores, pedra ainda sao retangulos coloridos
-3. Direcao de arte definitiva: estilo do mascote ja definido (cartoon pixel-art, ~16-bit moderno). Aplicar mesmo estilo no terreno
+### Pra G9 (visual final — quase completo, falta so polish UI)
+1. ~~Sprite real do mascote Gentileza~~ FEITO em 361a602
+2. ~~Tilemap pixel-art real~~ FEITO em 6c1a3f0:
+   - 4 tiles 64x64 em `jogo/public/assets/tiles/`: tile_cut, tile_tall, tile_flowers, tile_stone
+   - fuel_barrel.png em `jogo/public/assets/sprites/` (galao vermelho com tampa amarela)
+   - title_bg.png em `jogo/public/assets/ui/` (imagem da TitleScene com logo)
+   - Pipeline `pesquisa/analise/extract_tiles.py`: flood-fill BFS dos 4 cantos remove background, connected components labeling filtra por tamanho (>= 4000 px), crop bbox + 12 px margin removal pra eliminar borda escura do "card" do gerador IA, downscale LANCZOS pra 64x64
+   - GameScene: TILE_COLOR -> TILE_TEXTURE map, this.add.rectangle -> this.add.image com setDisplaySize, cutTileAt usa setTexture('tile_cut'), FuelBarrel.sprite virou Image
+   - BootScene preload: 4 tiles + fuel_barrel + title_bg
+   - BUGFIX simultaneo: galao spawnava em TALL e ao pegar nao cortava a grama embaixo (early return em onPickupFuel). Removido o return — agora pickup + cutTileAt acontecem juntos como Andre pediu
+3. **Polish UI alinhamento** (PENDENTE): TitleScene tem imagem com botoes desenhados (JOGAR, selector 1-10, toggles) mas botoes funcionais Phaser ficam em coordenadas antigas. Visual duplicado. Andre disse "e o de menos", deixar pra proxima sessao
+4. Estilo: cartoon pixel-art ~16-bit moderno, paleta vibrante. Mascote + tiles + bg consistentes
 
 ### G7.5 (CONCLUIDO 2026-04-30)
 Repo do app: `terra-gentil/terra-gentil-app` (clone local em `C:\Gitlab_hz\app-terragentil\`).

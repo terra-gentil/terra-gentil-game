@@ -16,11 +16,11 @@ const DIR_VEC: Record<Dir, { x: number; y: number }> = {
   DOWN: { x: 0, y: 1 },
 };
 
-const TILE_COLOR: Record<number, number> = {
-  [TILE.CUT]: COLORS.GRASS_CUT,
-  [TILE.TALL]: COLORS.GRASS_TALL,
-  [TILE.FLOWERS]: 0xE91E63,
-  [TILE.STONE]: 0x8E8E8E,
+const TILE_TEXTURE: Record<number, string> = {
+  [TILE.CUT]: 'tile_cut',
+  [TILE.TALL]: 'tile_tall',
+  [TILE.FLOWERS]: 'tile_flowers',
+  [TILE.STONE]: 'tile_stone',
 };
 
 const HUD_HEIGHT = 100;
@@ -39,7 +39,7 @@ interface SceneData {
 interface FuelBarrel {
   tileX: number;
   tileY: number;
-  sprite: Phaser.GameObjects.Rectangle;
+  sprite: Phaser.GameObjects.Image;
   tween: Phaser.Tweens.Tween;
 }
 
@@ -100,7 +100,7 @@ export class GameScene extends Phaser.Scene {
   private allLevels!: AllLevelsJson;
   private level!: LevelJson;
   private levelIndex = 0;
-  private tileGrid: Phaser.GameObjects.Rectangle[][] = [];
+  private tileGrid: Phaser.GameObjects.Image[][] = [];
 
   private worldW = 0;
   private worldH = 0;
@@ -197,16 +197,11 @@ export class GameScene extends Phaser.Scene {
       this.tileGrid[row] = [];
       for (let col = 0; col < W; col++) {
         const type = this.level.tiles[row][col];
-        const color = TILE_COLOR[type] ?? 0x222222;
-        const rect = this.add.rectangle(
-          this.tileToPx(col),
-          this.tileToPy(row),
-          TILE_SIZE - 2,
-          TILE_SIZE - 2,
-          color
-        );
-        rect.setData('type', type);
-        this.tileGrid[row][col] = rect;
+        const tex = TILE_TEXTURE[type] ?? 'tile_cut';
+        const img = this.add.image(this.tileToPx(col), this.tileToPy(row), tex);
+        img.setDisplaySize(TILE_SIZE, TILE_SIZE);
+        img.setData('type', type);
+        this.tileGrid[row][col] = img;
       }
     }
 
@@ -525,7 +520,7 @@ export class GameScene extends Phaser.Scene {
   private onEnterTile(tx: number, ty: number): void {
     if (this.fuelBarrel && this.fuelBarrel.tileX === tx && this.fuelBarrel.tileY === ty) {
       this.onPickupFuel();
-      return;
+      // NAO retorna — galao spawna em TALL, continua pra cortar a grama embaixo
     }
 
     const type = this.level.tiles[ty][tx];
@@ -535,7 +530,8 @@ export class GameScene extends Phaser.Scene {
     } else if (type === TILE.FLOWERS) {
       this.applyFuelPenalty(PENALTY_FLOWERS);
       this.level.tiles[ty][tx] = TILE.CUT;
-      this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
+      this.tileGrid[ty][tx].setTexture('tile_cut');
+      this.tileGrid[ty][tx].setData('type', TILE.CUT);
       // Se o penalty disparou game over, skip SFX pra nao sobrepor com gameOver()
       if (!this.gameOver) {
         sfx.penaltyFlowers();
@@ -560,7 +556,8 @@ export class GameScene extends Phaser.Scene {
 
   private cutTileAt(tx: number, ty: number): void {
     this.level.tiles[ty][tx] = TILE.CUT;
-    this.tileGrid[ty][tx].setFillStyle(COLORS.GRASS_CUT);
+    this.tileGrid[ty][tx].setTexture('tile_cut');
+    this.tileGrid[ty][tx].setData('type', TILE.CUT);
     this.cutCount++;
     recordCut(this.levelIndex);
     this.updateHud();
@@ -615,14 +612,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    const sprite = this.add.rectangle(
+    const sprite = this.add.image(
       this.tileToPx(pick.x),
       this.tileToPy(pick.y),
-      TILE_SIZE * 0.65,
-      TILE_SIZE * 0.65,
-      COLORS.MOWER_ORANGE
+      'fuel_barrel'
     );
-    sprite.setStrokeStyle(4, 0xFFFFFF);
+    sprite.setDisplaySize(TILE_SIZE * 0.7, TILE_SIZE * 0.7);
     sprite.setDepth(5);
 
     const tween = this.tweens.add({

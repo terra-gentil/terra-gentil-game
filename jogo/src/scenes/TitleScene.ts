@@ -24,23 +24,12 @@ export class TitleScene extends Phaser.Scene {
     // Sincroniza muted do sfx player com o setting persistido
     sfx.setMuted(!getSettings().soundEnabled);
 
-    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 5, 'GENTILEZA', {
-      fontFamily: 'Arial Black',
-      fontSize: '96px',
-      color: '#F5C97E',
-      stroke: '#000000',
-      strokeThickness: 8,
-    });
-    title.setOrigin(0.5);
-
-    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 5 + 100, 'Resgate dos Jardins', {
-      fontFamily: 'Arial',
-      fontSize: '48px',
-      color: '#FFFFFF',
-      stroke: '#000000',
-      strokeThickness: 4,
-    });
-    subtitle.setOrigin(0.5);
+    // Background da title screen — imagem com logo "GENTILEZA Resgate dos
+    // Jardins" + arte de jardim. Logo ja vem desenhada na imagem, por isso
+    // nao adicionamos os textos GENTILEZA/Resgate como text objects.
+    const bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'title_bg');
+    bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+    bg.setDepth(0);
 
     const startButton = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10, 'JOGAR DESDE A FASE 1', {
       fontFamily: 'Arial',

@@ -11,6 +11,12 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 90,
     });
+    this.load.image('tile_cut', 'assets/tiles/tile_cut.png');
+    this.load.image('tile_tall', 'assets/tiles/tile_tall.png');
+    this.load.image('tile_flowers', 'assets/tiles/tile_flowers.png');
+    this.load.image('tile_stone', 'assets/tiles/tile_stone.png');
+    this.load.image('fuel_barrel', 'assets/sprites/fuel_barrel.png');
+    this.load.image('title_bg', 'assets/ui/title_bg.png');
   }
 
   create(): void {
